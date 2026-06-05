@@ -1,0 +1,16 @@
+services:
+  checklist-hogar:
+    build: .
+    container_name: checklist-hogar
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    volumes:
+      - ./data:/data
+      - ./backups:/backups
+    pids_limit: 256
+    mem_limit: 512m
+    security_opt:
+      - no-new-privileges:true

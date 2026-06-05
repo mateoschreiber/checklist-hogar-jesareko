@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0057D9">
+  <title>Checklist de limpieza y orden del hogar</title>
+  <link rel="manifest" href="/static/manifest.json">
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <section class="login-screen" id="loginScreen" hidden>
+    <div class="login-card">
+      <div class="brand-login"><span class="brand-mark"></span><strong>Checklist Hogar</strong></div>
+      <h1>Ingresar al dashboard</h1>
+      <p>Controlá rutinas, cerrá tareas y guardá historial por usuario.</p>
+      <form id="loginForm" class="form-grid">
+        <label>Correo
+          <input type="email" id="loginEmail" autocomplete="email" required placeholder="admin@hogar.local">
+        </label>
+        <label>Contraseña
+          <input type="password" id="loginPassword" autocomplete="current-password" required placeholder="••••••••">
+        </label>
+        <button class="btn full" type="submit">Ingresar</button>
+      </form>
+      <p class="error" id="loginError" role="alert"></p>
+    </div>
+  </section>
+
+  <div id="appShell" hidden>
+    <header class="hero" id="inicio">
+      <nav class="nav" aria-label="Navegación principal">
+        <a class="brand" href="#inicio" aria-label="Inicio">
+          <span class="brand-mark"></span>
+          <span>Checklist Hogar</span>
+        </a>
+        <div class="nav-links">
+          <a href="#rutinas">Rutinas</a>
+          <a href="#historial">Historial</a>
+          <a href="#usuarios" id="usersNav" hidden>Usuarios</a>
+          <button type="button" class="nav-button" id="logoutBtn">Salir</button>
+        </div>
+      </nav>
+
+      <div class="hero-inner">
+        <div class="hero-copy reveal visible">
+          <span class="eyebrow light">Dashboard doméstico</span>
+          <h1>Limpieza, orden e historial validado.</h1>
+          <p>Marcá tareas, cerrá la rutina del día y generá un comprobante con fecha, hora, responsable y detalle de lo realizado.</p>
+          <div class="hero-actions">
+            <button class="btn" type="button" id="closeRunTop">Cerrar rutina</button>
+            <button class="btn ghost" type="button" id="printListsBtn">Imprimir listas</button>
+          </div>
+        </div>
+
+        <aside class="status-card reveal visible" aria-label="Resumen de avance">
+          <div class="card-label"><span id="userLabel">Usuario</span><span>Hogar</span></div>
+          <div class="chip" aria-hidden="true"></div>
+          <div class="score"><span id="doneCount">0</span><small>/<span id="totalCount">0</span></small></div>
+          <p>Los checks y notas quedan guardados localmente. El historial formal se guarda al cerrar la rutina.</p>
+          <div class="mini-grid">
+            <div class="mini"><strong id="routineCount">0</strong><span>rutinas</span></div>
+            <div class="mini"><strong id="historyCount">0</strong><span>cierres</span></div>
+            <div class="mini"><strong id="percentDone">0%</strong><span>avance</span></div>
+          </div>
+        </aside>
+      </div>
+      <div class="hero-line" aria-hidden="true"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+      <a class="scroll-cue" href="#rutinas" aria-label="Bajar">↓</a>
+    </header>
+
+    <main>
+      <section class="section intro reveal" id="resumen">
+        <div class="section-title left">
+          <span class="eyebrow">Modo de trabajo</span>
+          <h2>Rutinas simples, comprobantes claros.</h2>
+          <p>El cierre registra únicamente lo marcado como realizado y, si se activa la opción, también lista pendientes para control posterior.</p>
+        </div>
+        <div class="summary-card">
+          <h3>Funciones incluidas</h3>
+          <div class="summary-list">
+            <div class="summary-item"><span>1</span><div><strong>Usuarios</strong><small>Acceso con correo y contraseña. El administrador puede crear cuentas.</small></div></div>
+            <div class="summary-item"><span>2</span><div><strong>Historial</strong><small>Cada cierre queda guardado en SQLite y asociado al usuario.</small></div></div>
+            <div class="summary-item"><span>3</span><div><strong>Comprobante</strong><small>Vista imprimible/PDF con fecha y hora de cierre.</small></div></div>
+            <div class="summary-item"><span>4</span><div><strong>Exportación</strong><small>CSV y JSON por cierre, más CSV general del historial.</small></div></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section reveal" id="rutinas">
+        <div class="section-title">
+          <span class="eyebrow">Checklist</span>
+          <h2>Frecuencias de limpieza</h2>
+          <p>Seleccioná tareas realizadas. En móvil las rutinas se muestran en una sola columna para trabajar más rápido.</p>
+        </div>
+        <div class="routine-toolbar">
+          <input id="taskSearch" type="search" placeholder="Buscar tarea, zona o rutina">
+          <button class="btn small" type="button" id="closeRunToolbar">Cerrar rutina</button>
+          <button class="btn small ghost-blue" type="button" id="clearChecksBtn">Limpiar checks</button>
+        </div>
+        <div id="routineContainer" class="routine-stack"></div>
+      </section>
+
+      <section class="history-section reveal" id="historial">
+        <div class="section-title">
+          <span class="eyebrow">Validación</span>
+          <h2>Historial de cierres</h2>
+          <p>Registro persistente de comprobantes generados.</p>
+        </div>
+        <div class="history-actions">
+          <button class="btn small" type="button" id="reloadHistoryBtn">Actualizar</button>
+          <a class="btn small ghost-blue" href="/api/export/runs.csv">Exportar historial CSV</a>
+        </div>
+        <div id="historyList" class="history-list"></div>
+      </section>
+
+      <section class="users-section reveal" id="usuarios" hidden>
+        <div class="section-title">
+          <span class="eyebrow">Administración</span>
+          <h2>Usuarios</h2>
+          <p>Alta rápida de usuarios para registrar cierres por responsable.</p>
+        </div>
+        <form id="userForm" class="user-form">
+          <label>Nombre<input type="text" id="newUserName" required placeholder="Nombre"></label>
+          <label>Correo<input type="email" id="newUserEmail" required placeholder="usuario@dominio.com"></label>
+          <label>Contraseña<input type="password" id="newUserPassword" required minlength="8" placeholder="Mínimo 8 caracteres"></label>
+          <label>Rol<select id="newUserRole"><option value="user">Usuario</option><option value="admin">Administrador</option></select></label>
+          <button class="btn small" type="submit">Crear usuario</button>
+        </form>
+        <div id="usersList" class="users-list"></div>
+      </section>
+    </main>
+
+    <footer>
+      <span>Checklist de limpieza y orden del hogar</span>
+      <span>Dashboard local · SQLite · Docker</span>
+    </footer>
+
+    <nav class="mobile-bar" aria-label="Navegación móvil">
+      <a href="#inicio">Inicio</a>
+      <a href="#rutinas">Rutinas</a>
+      <button type="button" id="closeRunMobile">Cerrar</button>
+      <a href="#historial">Historial</a>
+    </nav>
+
+    <div class="floating-tools" aria-label="Herramientas rápidas">
+      <button class="tool-button" type="button" id="closeRunFloat" title="Cerrar rutina">✓</button>
+      <button class="tool-button" type="button" id="clearChecksFloat" title="Limpiar marcas">↺</button>
+    </div>
+  </div>
+
+  <dialog class="modal" id="closeRunModal">
+    <form method="dialog" class="modal-card" id="closeRunForm">
+      <div class="modal-head">
+        <div>
+          <span class="eyebrow">Cierre de rutina</span>
+          <h2>Generar comprobante</h2>
+        </div>
+        <button class="icon-button" type="button" id="closeModalBtn" aria-label="Cerrar">×</button>
+      </div>
+      <div class="modal-grid">
+        <label>Fecha
+          <input type="text" id="closeDate" readonly>
+        </label>
+        <label>Hora
+          <input type="text" id="closeTime" readonly>
+        </label>
+        <label>Responsable
+          <input type="text" id="closeResponsible" required>
+        </label>
+        <label>Rutina
+          <select id="closeRoutine"></select>
+        </label>
+      </div>
+      <label class="wide-label">Observaciones
+        <textarea id="closeObservations" rows="4" placeholder="Ej.: quedó pendiente comprar bolsas, revisar humedad, etc."></textarea>
+      </label>
+      <label class="switch-row">
+        <input type="checkbox" id="includePending" checked>
+        <span>Incluir tareas pendientes en el comprobante</span>
+      </label>
+      <div class="close-preview" id="closePreview"></div>
+      <div class="modal-actions">
+        <button class="btn ghost-blue" type="button" id="cancelCloseBtn">Cancelar</button>
+        <button class="btn" type="submit">Guardar cierre y abrir comprobante</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="/static/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+.env
+.git/
+.gitignore
+.vscode/
+.idea/
+data/*.db
+data/*.db-*
+backups/*.sqlite3
+backups/*.db
+backups/*.zip
