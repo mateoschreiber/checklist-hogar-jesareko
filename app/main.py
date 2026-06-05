@@ -29,7 +29,7 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 
 class LoginIn(BaseModel):
-    email: str = Field(pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$", max_length=254)
+    email: str = Field(min_length=1, max_length=254)
     password: str
 
 
@@ -158,8 +158,8 @@ def register(payload: RegisterIn, response: Response) -> dict:
 def login(payload: LoginIn, request: Request, response: Response) -> dict:
     with connect() as conn:
         row = conn.execute(
-            "SELECT id, name, email, password_hash, role, is_active FROM users WHERE email = ?",
-            (payload.email.lower(),),
+            "SELECT id, name, email, password_hash, role, is_active FROM users WHERE lower(email) = ? OR lower(name) = ?",
+            (payload.email.strip().lower(), payload.email.strip().lower()),
         ).fetchone()
         if not row or not row["is_active"] or not verify_password(payload.password, row["password_hash"]):
             raise HTTPException(status_code=401, detail="Usuario o contraseña inválidos.")

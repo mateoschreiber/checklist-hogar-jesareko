@@ -145,7 +145,7 @@ def seed_admin(conn: sqlite3.Connection) -> None:
         INSERT INTO users (name, email, password_hash, role, is_active, created_at)
         VALUES (?, ?, ?, 'admin', 1, ?)
         """,
-        (admin_name, admin_email, hash_password(admin_password), iso_now()),
+        (admin_name, admin_email, hash_password(admin_password, min_length=1), iso_now()),
     )
 
 
