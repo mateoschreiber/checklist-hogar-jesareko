@@ -2,7 +2,10 @@ const state = {
   user: null,
   routines: [],
   tasks: [],
-  history: []
+  history: [],
+  calendarDate: new Date(),
+  selectedCalendarDate: null,
+  calendarReports: {}
 };
 
 const $ = (selector) => document.querySelector(selector);
@@ -33,13 +36,41 @@ function toast(message) {
   window.__toastTimer = setTimeout(() => box.classList.remove('show'), 3200);
 }
 
+function pad2(value) {
+  return String(value).padStart(2, '0');
+}
+
 function formatDateTimeLocal(date = new Date()) {
-  const pad = (n) => String(n).padStart(2, '0');
   return {
-    date: `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()}`,
-    time: `${pad(date.getHours())}:${pad(date.getMinutes())}`,
+    date: `${pad2(date.getDate())}/${pad2(date.getMonth() + 1)}/${date.getFullYear()}`,
+    time: `${pad2(date.getHours())}:${pad2(date.getMinutes())}`,
     iso: date.toISOString()
   };
+}
+
+function localDateKey(date) {
+  return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
+}
+
+function monthKey(date = state.calendarDate) {
+  return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}`;
+}
+
+function parseDateKey(dateKey) {
+  const [year, month, day] = dateKey.split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
+
+function formatDateKey(dateKey) {
+  return new Intl.DateTimeFormat('es-PY', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' }).format(parseDateKey(dateKey));
+}
+
+function formatMonthLabel(date) {
+  return new Intl.DateTimeFormat('es-PY', { month: 'long', year: 'numeric' }).format(date);
+}
+
+function activateReveals() {
+  $$('.reveal').forEach((el) => el.classList.add('visible'));
 }
 
 function storageKey(id, type = 'checked') {
@@ -130,6 +161,7 @@ function renderChecklist() {
     container.appendChild(card);
   });
   updateProgress();
+  activateReveals();
 }
 
 async function loadChecklist() {
@@ -203,6 +235,7 @@ async function closeRoutine(event) {
     $('#closeRunModal').close();
     toast('Cierre guardado correctamente.');
     await loadHistory();
+    await loadCalendar();
     window.open(`/api/runs/${result.run_id}/receipt`, '_blank');
   } catch (error) {
     toast(error.message);
@@ -237,9 +270,100 @@ async function loadHistory() {
       if (!confirm('¿Borrar este cierre del historial?')) return;
       await api(`/api/runs/${button.dataset.deleteRun}`, { method: 'DELETE' });
       toast('Cierre borrado.');
-      loadHistory();
+      await loadHistory();
+      await loadCalendar();
     });
   });
+}
+
+async function loadCalendar() {
+  const currentMonth = monthKey();
+  const data = await api(`/api/reports/calendar?month=${currentMonth}`);
+  state.calendarReports = data.days.reduce((reports, day) => {
+    reports[day.date] = day.runs;
+    return reports;
+  }, {});
+
+  const datesWithReports = Object.keys(state.calendarReports).sort();
+  if (!state.selectedCalendarDate || !state.selectedCalendarDate.startsWith(currentMonth)) {
+    const todayKey = localDateKey(new Date());
+    state.selectedCalendarDate = todayKey.startsWith(currentMonth) ? todayKey : (datesWithReports[0] || `${currentMonth}-01`);
+  }
+  renderCalendar();
+}
+
+function renderCalendar() {
+  const grid = $('#calendarGrid');
+  if (!grid) return;
+
+  const year = state.calendarDate.getFullYear();
+  const month = state.calendarDate.getMonth();
+  $('#calendarMonthLabel').textContent = formatMonthLabel(state.calendarDate);
+
+  const firstOfMonth = new Date(year, month, 1);
+  const mondayOffset = (firstOfMonth.getDay() + 6) % 7;
+  const firstCell = new Date(year, month, 1 - mondayOffset);
+  const cells = [];
+
+  for (let index = 0; index < 42; index += 1) {
+    const cellDate = new Date(firstCell);
+    cellDate.setDate(firstCell.getDate() + index);
+    const dateKey = localDateKey(cellDate);
+    const reports = state.calendarReports[dateKey] || [];
+    const isCurrentMonth = cellDate.getMonth() === month;
+    const isSelected = dateKey === state.selectedCalendarDate;
+    const isToday = dateKey === localDateKey(new Date());
+    cells.push(`
+      <button type="button" class="calendar-day ${isCurrentMonth ? '' : 'muted'} ${reports.length ? 'has-reports' : ''} ${isSelected ? 'selected' : ''} ${isToday ? 'today' : ''}" data-calendar-date="${dateKey}">
+        <span class="day-number">${cellDate.getDate()}</span>
+        ${reports.length ? `<span class="report-badge">${reports.length}</span>` : ''}
+      </button>
+    `);
+  }
+
+  grid.innerHTML = cells.join('');
+  $$('[data-calendar-date]').forEach((button) => {
+    button.addEventListener('click', () => {
+      state.selectedCalendarDate = button.dataset.calendarDate;
+      renderCalendar();
+    });
+  });
+  renderCalendarDetails();
+}
+
+function renderCalendarDetails() {
+  const panel = $('#calendarDetails');
+  const dateKey = state.selectedCalendarDate || `${monthKey()}-01`;
+  const reports = state.calendarReports[dateKey] || [];
+
+  if (!reports.length) {
+    panel.innerHTML = `<div class="calendar-empty"><strong>${formatDateKey(dateKey)}</strong><span>Sin reportes guardados.</span></div>`;
+    return;
+  }
+
+  panel.innerHTML = `
+    <div class="calendar-detail-head">
+      <strong>${formatDateKey(dateKey)}</strong>
+      <span>${reports.length} reporte${reports.length === 1 ? '' : 's'}</span>
+    </div>
+    <div class="calendar-report-list">
+      ${reports.map((run) => `
+        <article class="calendar-report">
+          <div>
+            <h4>${run.routine_title} · ${run.percent}%</h4>
+            <p>${run.client_closed_at || run.server_closed_at} · Responsable: ${run.responsible} · ${run.completed_count}/${run.total_count} tareas</p>
+          </div>
+          <a href="/api/runs/${run.id}/receipt" target="_blank" rel="noopener">Comprobante</a>
+        </article>
+      `).join('')}
+    </div>
+  `;
+}
+
+function changeCalendarMonth(delta) {
+  state.calendarDate = new Date(state.calendarDate.getFullYear(), state.calendarDate.getMonth() + delta, 1);
+  state.selectedCalendarDate = null;
+  loadCalendar().catch((error) => toast(error.message));
 }
 
 async function loadUsers() {
@@ -317,8 +441,10 @@ async function showApp() {
   $('#appShell').hidden = false;
   $('#usersNav').hidden = state.user.role !== 'admin';
   $('#usuarios').hidden = state.user.role !== 'admin';
+  activateReveals();
   await loadChecklist();
   await loadHistory();
+  await loadCalendar();
   await loadUsers();
 }
 
@@ -333,7 +459,12 @@ async function init() {
   $('#clearChecksBtn').addEventListener('click', clearChecks);
   $('#clearChecksFloat').addEventListener('click', clearChecks);
   $('#printListsBtn').addEventListener('click', () => window.print());
-  $('#reloadHistoryBtn').addEventListener('click', loadHistory);
+  $('#reloadHistoryBtn').addEventListener('click', async () => {
+    await loadHistory();
+    await loadCalendar();
+  });
+  $('#prevMonthBtn').addEventListener('click', () => changeCalendarMonth(-1));
+  $('#nextMonthBtn').addEventListener('click', () => changeCalendarMonth(1));
   $('#closeModalBtn').addEventListener('click', () => $('#closeRunModal').close());
   $('#cancelCloseBtn').addEventListener('click', () => $('#closeRunModal').close());
   $('#closeRoutine').addEventListener('change', updateClosePreview);

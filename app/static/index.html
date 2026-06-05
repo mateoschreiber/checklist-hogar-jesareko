@@ -35,8 +35,9 @@
           <span>Checklist Hogar</span>
         </a>
         <div class="nav-links">
-          <a href="#rutinas">Rutinas</a>
+          <a href="#rutinas">Checklist</a>
           <a href="#historial">Historial</a>
+          <a href="#calendario">Calendario</a>
           <a href="#usuarios" id="usersNav" hidden>Usuarios</a>
           <button type="button" class="nav-button" id="logoutBtn">Salir</button>
         </div>
@@ -114,6 +115,26 @@
         <div id="historyList" class="history-list"></div>
       </section>
 
+      <section class="calendar-section reveal" id="calendario">
+        <div class="section-title">
+          <span class="eyebrow">Calendario</span>
+          <h2>Reportes por mes</h2>
+          <p>Días con cierres guardados en el historial.</p>
+        </div>
+        <div class="calendar-card">
+          <div class="calendar-topbar">
+            <button class="icon-button" type="button" id="prevMonthBtn" aria-label="Mes anterior">‹</button>
+            <h3 id="calendarMonthLabel">Mes</h3>
+            <button class="icon-button" type="button" id="nextMonthBtn" aria-label="Mes siguiente">›</button>
+          </div>
+          <div class="calendar-weekdays" aria-hidden="true">
+            <span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span><span>Dom</span>
+          </div>
+          <div id="calendarGrid" class="calendar-grid"></div>
+          <div id="calendarDetails" class="calendar-details"></div>
+        </div>
+      </section>
+
       <section class="users-section reveal" id="usuarios" hidden>
         <div class="section-title">
           <span class="eyebrow">Administración</span>
@@ -137,10 +158,10 @@
     </footer>
 
     <nav class="mobile-bar" aria-label="Navegación móvil">
-      <a href="#inicio">Inicio</a>
-      <a href="#rutinas">Rutinas</a>
-      <button type="button" id="closeRunMobile">Cerrar</button>
+      <a href="#rutinas">Checklist</a>
       <a href="#historial">Historial</a>
+      <button type="button" id="closeRunMobile">Cerrar</button>
+      <a href="#calendario">Calendario</a>
     </nav>
 
     <div class="floating-tools" aria-label="Herramientas rápidas">

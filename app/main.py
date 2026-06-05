@@ -367,6 +367,41 @@ def list_runs(limit: int = 30, offset: int = 0, user: dict = Depends(get_current
     return {"runs": rows_to_dicts(rows)}
 
 
+@app.get("/api/reports/calendar")
+def reports_calendar(month: str, user: dict = Depends(get_current_user)) -> dict:
+    try:
+        start = datetime.strptime(month, "%Y-%m").replace(tzinfo=timezone.utc)
+    except ValueError:
+        raise HTTPException(status_code=422, detail="Usá el formato YYYY-MM.")
+
+    next_year = start.year + (1 if start.month == 12 else 0)
+    next_month = 1 if start.month == 12 else start.month + 1
+    end = start.replace(year=next_year, month=next_month, day=1)
+
+    base_query = """
+        SELECT r.*, u.name AS user_name, u.email AS user_email
+        FROM runs r JOIN users u ON u.id = r.user_id
+        WHERE r.server_closed_at >= ? AND r.server_closed_at < ?
+    """
+    params: list[Any] = [start.isoformat(), end.isoformat()]
+    if user["role"] != "admin":
+        base_query += " AND r.user_id = ?"
+        params.append(user["id"])
+    base_query += " ORDER BY r.server_closed_at ASC"
+
+    with connect() as conn:
+        runs = rows_to_dicts(conn.execute(base_query, params).fetchall())
+
+    days: dict[str, dict[str, Any]] = {}
+    for run in runs:
+        date_key = str(run.get("server_closed_at", ""))[:10]
+        day = days.setdefault(date_key, {"date": date_key, "count": 0, "runs": []})
+        day["count"] += 1
+        day["runs"].append(run)
+
+    return {"month": month, "days": list(days.values())}
+
+
 @app.get("/api/runs/{run_id}")
 def get_run(run_id: int, user: dict = Depends(get_current_user)) -> dict:
     with connect() as conn:
