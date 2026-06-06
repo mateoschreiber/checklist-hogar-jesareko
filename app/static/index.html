@@ -15,13 +15,13 @@
         <div class="brand-mark" aria-hidden="true"></div>
         <strong>Checklist Hogar</strong>
       </div>
-      <h1>Ingreso seguro</h1>
-      <p>Accedé con usuario o correo y contraseña para trabajar por secciones sin recorrer una landing larga.</p>
+      <h1>Ingreso local</h1>
+      <p>Modo LAN con usuario y contraseña. Credenciales iniciales locales: <code>admin:admin</code> si la base está vacía.</p>
       <form id="loginForm" class="form-grid">
-        <label>Usuario o correo
-          <input type="text" id="loginEmail" autocomplete="username" required placeholder="admin o admin@hogar.local">
+        <label for="loginUsername">Usuario
+          <input type="text" id="loginUsername" autocomplete="username" required placeholder="admin">
         </label>
-        <label>Contraseña
+        <label for="loginPassword">Contraseña
           <input type="password" id="loginPassword" autocomplete="current-password" required placeholder="********">
         </label>
         <button class="btn full" type="submit">Ingresar</button>
@@ -38,19 +38,19 @@
             <div class="brand-mark" aria-hidden="true"></div>
             <div>
               <strong>Checklist Hogar</strong>
-              <small>Panel LAN</small>
+              <small>Solo red local</small>
             </div>
           </div>
           <div class="user-card">
             <span class="eyebrow">Sesión</span>
-            <strong id="sidebarUserName">Administrador</strong>
-            <p id="sidebarUserMeta">admin</p>
+            <strong id="sidebarUserName">admin</strong>
+            <p id="sidebarUserMeta">Administrador</p>
           </div>
         </div>
         <nav class="sidebar-nav" aria-label="Navegación principal">
           <button type="button" class="nav-link" data-view-target="home">Inicio</button>
           <button type="button" class="nav-link" data-view-target="checklist">Checklist</button>
-          <button type="button" class="nav-link" data-view-target="close">Cerrar rutina</button>
+          <button type="button" class="nav-link writer-only" data-view-target="close">Generar cierre</button>
           <button type="button" class="nav-link" data-view-target="history">Historial</button>
           <button type="button" class="nav-link" data-view-target="calendar">Calendario</button>
           <button type="button" class="nav-link admin-only" data-view-target="admin" hidden>Administración</button>
@@ -64,24 +64,26 @@
         <header class="topbar">
           <div>
             <span class="eyebrow" id="viewEyebrow">Inicio</span>
-            <h1 id="viewTitle">Resumen operativo</h1>
+            <h1 id="viewTitle">Resumen local</h1>
           </div>
-          <div class="topbar-actions">
+          <div class="topbar-actions writer-only">
             <button class="btn ghost-blue" type="button" id="quickChecklistBtn">Checklist</button>
-            <button class="btn" type="button" id="quickCloseBtn">Cerrar rutina</button>
+            <button class="btn" type="button" id="quickCloseBtn">Generar cierre</button>
           </div>
         </header>
 
         <main class="views">
+          <div class="status-banner" id="globalStatus" data-tone="info" hidden></div>
+
           <section class="view-panel" id="view-home">
             <div class="panel-grid home-grid">
               <article class="surface hero-panel">
                 <span class="eyebrow light">Resumen</span>
-                <h2>Todo el trabajo queda dividido por vistas y secciones.</h2>
-                <p>Usá el checklist por frecuencia, cerrá solo la sección activa y consultá historial o calendario sin arrastrar una pantalla interminable.</p>
-                <div class="hero-actions">
+                <h2>Checklist simple para uso local y móvil dentro de la misma red.</h2>
+                <p>Guardá avance en este dispositivo, generá cierres con fecha local y consultá historial, calendario y comprobantes sin dependencias pesadas.</p>
+                <div class="hero-actions writer-only">
                   <button class="btn" type="button" id="homeChecklistBtn">Abrir checklist</button>
-                  <button class="btn ghost-blue" type="button" id="homeCloseBtn">Cerrar una rutina</button>
+                  <button class="btn ghost-blue" type="button" id="homeCloseBtn">Generar cierre</button>
                 </div>
               </article>
               <article class="surface stats-panel">
@@ -116,21 +118,22 @@
               <div class="panel-head panel-head-stack">
                 <div>
                   <span class="eyebrow">Checklist</span>
-                  <h3>Tareas por frecuencia</h3>
-                  <p>Se muestra una sola sección a la vez para evitar scroll infinito.</p>
+                  <h3>Tareas por sección</h3>
+                  <p>El avance se guarda localmente en este dispositivo. Los perfiles de solo lectura no pueden modificarlo.</p>
                 </div>
                 <div class="section-toolbar">
-                  <input id="taskSearch" type="search" placeholder="Buscar tarea o zona en la sección activa">
-                  <button class="btn ghost-blue" type="button" id="saveProgressBtn">Guardar avance</button>
-                  <button class="btn" type="button" id="openCloseFromChecklistBtn">Cerrar sección</button>
-                  <button class="btn ghost-blue" type="button" id="clearSectionBtn">Limpiar sección</button>
+                  <input id="taskSearch" type="search" aria-label="Buscar tarea" placeholder="Buscar tarea, zona o categoría">
+                  <button class="btn ghost-blue writer-only" type="button" id="saveProgressBtn">Continuar luego</button>
+                  <button class="btn ghost-blue" type="button" id="restoreProgressBtn">Restaurar avance local</button>
+                  <button class="btn writer-only" type="button" id="openCloseFromChecklistBtn">Generar cierre</button>
+                  <button class="btn ghost-blue writer-only" type="button" id="clearSectionBtn">Limpiar avance local</button>
                 </div>
               </div>
               <div class="subnav-tabs" id="checklistTabs"></div>
               <div class="section-summary" id="checklistSummary"></div>
               <div class="progress-card">
                 <div class="progress-top">
-                  <strong id="sectionProgressText">0 de 0 completadas</strong>
+                  <strong id="sectionProgressText">0 de 0 completados</strong>
                   <span id="sectionProgressPercent">0%</span>
                 </div>
                 <div class="progress-bar"><span id="sectionProgressBar"></span></div>
@@ -143,37 +146,38 @@
             <article class="surface close-shell">
               <div class="panel-head">
                 <div>
-                  <span class="eyebrow">Cerrar rutina</span>
-                  <h3>Generar comprobante por sección</h3>
-                  <p>El porcentaje se calcula solo sobre la sección elegida, salvo que selecciones todas las secciones.</p>
+                  <span class="eyebrow">Cierre</span>
+                  <h3>Generar comprobante</h3>
+                  <p>La fecha usada es local y se guarda explícitamente en formato <code>YYYY-MM-DD</code>.</p>
                 </div>
               </div>
               <form id="closeRunForm" class="close-form">
                 <div class="close-grid">
-                  <label>Fecha
-                    <input type="text" id="closeDate" readonly>
+                  <label for="closeDate">Fecha local
+                    <input type="date" id="closeDate" required>
                   </label>
-                  <label>Hora
-                    <input type="text" id="closeTime" readonly>
+                  <label for="closeTime">Hora local
+                    <input type="time" id="closeTime" required>
                   </label>
-                  <label>Responsable
+                  <label for="closeResponsible">Responsable
                     <input type="text" id="closeResponsible" required>
                   </label>
-                  <label>Sección
+                  <label for="closeRoutine">Sección
                     <select id="closeRoutine"></select>
                   </label>
                 </div>
-                <label>Observaciones
-                  <textarea id="closeObservations" rows="4" placeholder="Notas generales para el cierre"></textarea>
+                <label for="closeObservations">Observación general
+                  <textarea id="closeObservations" rows="4" placeholder="Notas generales para este cierre"></textarea>
                 </label>
                 <label class="switch-row">
                   <input type="checkbox" id="includePending" checked>
                   <span>Incluir pendientes en el comprobante</span>
                 </label>
                 <div class="close-preview" id="closePreview"></div>
+                <div class="close-result" id="closeResult" hidden></div>
                 <div class="action-row">
                   <button class="btn ghost-blue" type="button" id="resetCloseViewBtn">Recargar vista</button>
-                  <button class="btn" type="submit">Guardar cierre y abrir comprobante</button>
+                  <button class="btn" type="submit">Guardar cierre</button>
                 </div>
               </form>
             </article>
@@ -192,6 +196,9 @@
                 </div>
               </div>
               <div id="historyList" class="stack-list"></div>
+              <div class="action-row compact">
+                <button class="btn ghost-blue" type="button" id="loadMoreHistoryBtn" hidden>Ver más</button>
+              </div>
             </article>
           </section>
 
@@ -200,7 +207,8 @@
               <div class="panel-head">
                 <div>
                   <span class="eyebrow">Calendario</span>
-                  <h3>Reportes por mes</h3>
+                  <h3>Actividad por día</h3>
+                  <p>Verde: completo, amarillo: incompleto, gris: sin actividad, rojo: incompleto vencido.</p>
                 </div>
               </div>
               <div class="calendar-topbar">
@@ -221,8 +229,8 @@
               <div class="panel-head">
                 <div>
                   <span class="eyebrow">Administración</span>
-                  <h3>Gestión de ítems del checklist</h3>
-                  <p>Solo el administrador puede crear, editar o desactivar tareas.</p>
+                  <h3>Usuarios, checklist, backups y auditoría</h3>
+                  <p>Los historiales y cierres no se borran físicamente. Se desactivan cuando corresponde.</p>
                 </div>
               </div>
               <div id="adminDenied" class="empty-state" hidden>
@@ -234,12 +242,12 @@
                   <article class="surface inset-surface">
                     <div class="panel-head">
                       <div>
-                        <span class="eyebrow">Ítems</span>
-                        <h3>Checklist por sección</h3>
+                        <span class="eyebrow">Checklist</span>
+                        <h3>Ítems</h3>
                       </div>
                     </div>
                     <div class="admin-toolbar">
-                      <label>Sección
+                      <label for="adminSectionFilter">Sección
                         <select id="adminSectionFilter"></select>
                       </label>
                       <label class="toggle-field">
@@ -249,14 +257,21 @@
                     </div>
                     <form id="itemForm" class="form-grid admin-form compact-form">
                       <input type="hidden" id="itemId">
-                      <label>Título
-                        <input type="text" id="itemTitle" required placeholder="Ej.: Limpiar estantes">
+                      <label for="itemTitle">Título
+                        <input type="text" id="itemTitle" required>
                       </label>
-                      <label>Zona
-                        <input type="text" id="itemZone" required placeholder="Ej.: Cocina">
+                      <label for="itemZone">Zona
+                        <input type="text" id="itemZone" required>
                       </label>
-                      <label>Orden
+                      <label for="itemCategory">Categoría
+                        <select id="itemCategory"></select>
+                      </label>
+                      <label for="itemOrder">Orden
                         <input type="number" id="itemOrder" min="0" step="1" required>
+                      </label>
+                      <label class="toggle-field">
+                        <input type="checkbox" id="itemRequired" checked>
+                        <span>Obligatorio</span>
                       </label>
                       <label class="toggle-field">
                         <input type="checkbox" id="itemActive" checked>
@@ -269,29 +284,55 @@
                     </form>
                     <div id="adminItemsList" class="stack-list"></div>
                   </article>
+
                   <article class="surface inset-surface">
                     <div class="panel-head">
                       <div>
                         <span class="eyebrow">Usuarios</span>
-                        <h3>Alta rápida</h3>
+                        <h3>Gestión básica</h3>
                       </div>
                     </div>
                     <form id="userForm" class="form-grid compact-form">
-                      <label>Nombre
-                        <input type="text" id="newUserName" required placeholder="Nombre">
+                      <label for="newUsername">Usuario
+                        <input type="text" id="newUsername" required placeholder="usuario">
                       </label>
-                      <label>Correo
-                        <input type="email" id="newUserEmail" required placeholder="usuario@dominio.com">
+                      <label for="newUserPassword">Contraseña
+                        <input type="password" id="newUserPassword" required placeholder="admin">
                       </label>
-                      <label>Contraseña
-                        <input type="password" id="newUserPassword" required minlength="8" placeholder="Mínimo 8 caracteres">
+                      <label for="newUserRole">Rol
+                        <select id="newUserRole">
+                          <option value="usuario">Usuario</option>
+                          <option value="solo_lectura">Solo lectura</option>
+                          <option value="admin">Administrador</option>
+                        </select>
                       </label>
-                      <label>Rol
-                        <select id="newUserRole"><option value="user">Usuario</option><option value="admin">Administrador</option></select>
-                      </label>
-                      <button class="btn" type="submit">Crear usuario</button>
+                      <div class="action-row compact full-span">
+                        <button class="btn" type="submit">Crear usuario</button>
+                      </div>
                     </form>
                     <div id="usersList" class="stack-list"></div>
+                  </article>
+                </div>
+
+                <div class="panel-grid split-grid admin-grid secondary-grid">
+                  <article class="surface inset-surface">
+                    <div class="panel-head">
+                      <div>
+                        <span class="eyebrow">Backups</span>
+                        <h3>SQLite</h3>
+                      </div>
+                      <button class="btn" type="button" id="createBackupBtn">Crear backup manual</button>
+                    </div>
+                    <div id="backupsList" class="stack-list"></div>
+                  </article>
+                  <article class="surface inset-surface">
+                    <div class="panel-head">
+                      <div>
+                        <span class="eyebrow">Auditoría</span>
+                        <h3>Actividad reciente</h3>
+                      </div>
+                    </div>
+                    <div id="activityList" class="stack-list"></div>
                   </article>
                 </div>
               </div>
@@ -304,9 +345,9 @@
     <nav class="mobile-nav" aria-label="Navegación móvil">
       <button type="button" class="mobile-link" data-view-target="home">Inicio</button>
       <button type="button" class="mobile-link" data-view-target="checklist">Checklist</button>
-      <button type="button" class="mobile-link" data-view-target="close">Cerrar</button>
+      <button type="button" class="mobile-link writer-only" data-view-target="close">Cerrar</button>
       <button type="button" class="mobile-link" data-view-target="history">Historial</button>
-      <button type="button" class="mobile-link" id="mobileMoreBtn">Más</button>
+      <button type="button" class="mobile-link" id="mobileMoreBtn" aria-expanded="false">Más</button>
     </nav>
 
     <div class="mobile-more" id="mobileMoreMenu" hidden>
@@ -317,6 +358,6 @@
   </div>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="/static/app.js"></script>
+  <script type="module" src="/static/app.js"></script>
 </body>
 </html>
