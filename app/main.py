@@ -5,6 +5,7 @@ import hashlib
 import io
 import json
 import os
+import uuid
 from datetime import datetime, timezone
 from html import escape
 from pathlib import Path
@@ -51,6 +52,22 @@ class RunCreateIn(BaseModel):
     notes_by_task: dict[str, str] = Field(default_factory=dict)
     include_pending: bool = True
     client_closed_at: Optional[str] = None
+
+
+class ChecklistItemCreateIn(BaseModel):
+    section_key: str = Field(min_length=1, max_length=80)
+    title: str = Field(min_length=1, max_length=240)
+    zone: str = Field(min_length=1, max_length=160)
+    sort_order: int = Field(default=1, ge=0, le=10000)
+    active: bool = True
+
+
+class ChecklistItemUpdateIn(BaseModel):
+    section_key: Optional[str] = Field(default=None, min_length=1, max_length=80)
+    title: Optional[str] = Field(default=None, min_length=1, max_length=240)
+    zone: Optional[str] = Field(default=None, min_length=1, max_length=160)
+    sort_order: Optional[int] = Field(default=None, ge=0, le=10000)
+    active: Optional[bool] = None
 
 
 def bool_env(name: str, default: bool = False) -> bool:
@@ -220,7 +237,7 @@ def create_user(payload: UserCreateIn, _: dict = Depends(require_admin)) -> dict
 def get_checklist(user: dict = Depends(get_current_user)) -> dict:
     with connect() as conn:
         routines = rows_to_dicts(conn.execute("SELECT * FROM routines ORDER BY sort_order"))
-        tasks = rows_to_dicts(conn.execute("SELECT * FROM tasks ORDER BY routine_id, sort_order"))
+        tasks = rows_to_dicts(conn.execute("SELECT * FROM tasks WHERE active = 1 ORDER BY routine_id, sort_order"))
     by_routine: dict[str, list[dict]] = {}
     for task in tasks:
         by_routine.setdefault(task["routine_id"], []).append(task)
@@ -229,13 +246,103 @@ def get_checklist(user: dict = Depends(get_current_user)) -> dict:
     return {"routines": routines, "user": user}
 
 
+def ensure_section_exists(conn, section_key: str) -> None:
+    exists = conn.execute("SELECT 1 FROM routines WHERE id = ?", (section_key,)).fetchone()
+    if not exists:
+        raise HTTPException(status_code=404, detail="Sección no encontrada.")
+
+
+@app.get("/api/admin/checklist/items")
+def list_admin_checklist_items(
+    section_key: Optional[str] = None,
+    include_inactive: bool = False,
+    _: dict = Depends(require_admin),
+) -> dict:
+    query = """
+        SELECT t.*, r.title AS section_title
+        FROM tasks t
+        JOIN routines r ON r.id = t.routine_id
+    """
+    conditions: list[str] = []
+    params: list[Any] = []
+    if section_key:
+        conditions.append("t.routine_id = ?")
+        params.append(section_key)
+    if not include_inactive:
+        conditions.append("t.active = 1")
+    if conditions:
+        query += " WHERE " + " AND ".join(conditions)
+    query += " ORDER BY r.sort_order, t.sort_order, t.title"
+
+    with connect() as conn:
+        items = rows_to_dicts(conn.execute(query, params).fetchall())
+    return {"items": items}
+
+
+@app.post("/api/admin/checklist/items")
+def create_checklist_item(payload: ChecklistItemCreateIn, _: dict = Depends(require_admin)) -> dict:
+    with connect() as conn:
+        ensure_section_exists(conn, payload.section_key)
+        item_id = f"custom-{uuid.uuid4().hex[:12]}"
+        conn.execute(
+            """
+            INSERT INTO tasks (id, routine_id, title, zone, sort_order, active)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (
+                item_id,
+                payload.section_key,
+                payload.title.strip(),
+                payload.zone.strip(),
+                payload.sort_order,
+                1 if payload.active else 0,
+            ),
+        )
+    return {"ok": True, "id": item_id}
+
+
+@app.put("/api/admin/checklist/items/{item_id}")
+def update_checklist_item(item_id: str, payload: ChecklistItemUpdateIn, _: dict = Depends(require_admin)) -> dict:
+    with connect() as conn:
+        existing = conn.execute("SELECT * FROM tasks WHERE id = ?", (item_id,)).fetchone()
+        if not existing:
+            raise HTTPException(status_code=404, detail="Ítem no encontrado.")
+        section_key = payload.section_key or existing["routine_id"]
+        ensure_section_exists(conn, section_key)
+        conn.execute(
+            """
+            UPDATE tasks
+            SET routine_id = ?, title = ?, zone = ?, sort_order = ?, active = ?
+            WHERE id = ?
+            """,
+            (
+                section_key,
+                payload.title.strip() if payload.title is not None else existing["title"],
+                payload.zone.strip() if payload.zone is not None else existing["zone"],
+                payload.sort_order if payload.sort_order is not None else existing["sort_order"],
+                1 if (payload.active if payload.active is not None else existing["active"]) else 0,
+                item_id,
+            ),
+        )
+    return {"ok": True}
+
+
+@app.delete("/api/admin/checklist/items/{item_id}")
+def delete_checklist_item(item_id: str, _: dict = Depends(require_admin)) -> dict:
+    with connect() as conn:
+        cur = conn.execute("UPDATE tasks SET active = 0 WHERE id = ?", (item_id,))
+    if cur.rowcount == 0:
+        raise HTTPException(status_code=404, detail="Ítem no encontrado.")
+    return {"ok": True}
+
+
 def get_tasks_for_scope(conn, routine_id: Optional[str]) -> list[dict]:
     if routine_id and routine_id != "all":
         rows = conn.execute(
             """
             SELECT t.*, r.title AS routine_title
             FROM tasks t JOIN routines r ON r.id = t.routine_id
-            WHERE t.routine_id = ?
+            WHERE t.routine_id = ? AND t.active = 1
             ORDER BY t.sort_order
             """,
             (routine_id,),
@@ -245,6 +352,7 @@ def get_tasks_for_scope(conn, routine_id: Optional[str]) -> list[dict]:
             """
             SELECT t.*, r.title AS routine_title
             FROM tasks t JOIN routines r ON r.id = t.routine_id
+            WHERE t.active = 1
             ORDER BY r.sort_order, t.sort_order
             """
         ).fetchall()
@@ -272,7 +380,7 @@ def create_run(payload: RunCreateIn, user: dict = Depends(get_current_user)) -> 
         pending_count = total_count - completed_count
         percent = round((completed_count / total_count) * 100) if total_count else 0
 
-        routine_title = "Todas las rutinas" if not payload.routine_id or payload.routine_id == "all" else completed[0]["routine_title"]
+        routine_title = "Todas las secciones" if not payload.routine_id or payload.routine_id == "all" else completed[0]["routine_title"]
         cur = conn.execute(
             """
             INSERT INTO runs (

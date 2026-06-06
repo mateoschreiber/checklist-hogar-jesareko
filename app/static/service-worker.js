@@ -1,4 +1,4 @@
-const CACHE_NAME = 'checklist-hogar-v1';
+const CACHE_NAME = 'checklist-hogar-dashboard-v2';
 const STATIC_ASSETS = ['/', '/static/index.html', '/static/styles.css', '/static/app.js', '/static/manifest.json'];
 
 self.addEventListener('install', (event) => {

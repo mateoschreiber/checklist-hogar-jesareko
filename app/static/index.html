@@ -3,210 +3,318 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#0057D9">
-  <title>Checklist de limpieza y orden del hogar</title>
+  <title>Checklist Hogar</title>
+  <meta name="theme-color" content="#0B5ED7">
   <link rel="manifest" href="/static/manifest.json">
   <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
-  <section class="login-screen" id="loginScreen" hidden>
+  <div class="login-screen" id="loginScreen">
     <div class="login-card">
-      <div class="brand-login"><span class="brand-mark"></span><strong>Checklist Hogar</strong></div>
-      <h1>Ingresar al dashboard</h1>
-      <p>Controlá rutinas, cerrá tareas y guardá historial por usuario.</p>
+      <div class="brand-login">
+        <div class="brand-mark" aria-hidden="true"></div>
+        <strong>Checklist Hogar</strong>
+      </div>
+      <h1>Ingreso seguro</h1>
+      <p>Accedé con usuario o correo y contraseña para trabajar por secciones sin recorrer una landing larga.</p>
       <form id="loginForm" class="form-grid">
-        <label>Correo
-          <input type="text" id="loginEmail" autocomplete="username" required placeholder="admin">
+        <label>Usuario o correo
+          <input type="text" id="loginEmail" autocomplete="username" required placeholder="admin o admin@hogar.local">
         </label>
         <label>Contraseña
-          <input type="password" id="loginPassword" autocomplete="current-password" required placeholder="••••••••">
+          <input type="password" id="loginPassword" autocomplete="current-password" required placeholder="********">
         </label>
         <button class="btn full" type="submit">Ingresar</button>
+        <p class="error" id="loginError"></p>
       </form>
-      <p class="error" id="loginError" role="alert"></p>
-    </div>
-  </section>
-
-  <div id="appShell" hidden>
-    <header class="hero" id="inicio">
-      <nav class="nav" aria-label="Navegación principal">
-        <a class="brand" href="#inicio" aria-label="Inicio">
-          <span class="brand-mark"></span>
-          <span>Checklist Hogar</span>
-        </a>
-        <div class="nav-links">
-          <a href="#rutinas">Checklist</a>
-          <a href="#historial">Historial</a>
-          <a href="#calendario">Calendario</a>
-          <a href="#usuarios" id="usersNav" hidden>Usuarios</a>
-          <button type="button" class="nav-button" id="logoutBtn">Salir</button>
-        </div>
-      </nav>
-
-      <div class="hero-inner">
-        <div class="hero-copy reveal visible">
-          <span class="eyebrow light">Dashboard doméstico</span>
-          <h1>Limpieza, orden e historial validado.</h1>
-          <p>Marcá tareas, cerrá la rutina del día y generá un comprobante con fecha, hora, responsable y detalle de lo realizado.</p>
-          <div class="hero-actions">
-            <button class="btn" type="button" id="closeRunTop">Cerrar rutina</button>
-            <button class="btn ghost" type="button" id="printListsBtn">Imprimir listas</button>
-          </div>
-        </div>
-
-        <aside class="status-card reveal visible" aria-label="Resumen de avance">
-          <div class="card-label"><span id="userLabel">Usuario</span><span>Hogar</span></div>
-          <div class="chip" aria-hidden="true"></div>
-          <div class="score"><span id="doneCount">0</span><small>/<span id="totalCount">0</span></small></div>
-          <p>Los checks y notas quedan guardados localmente. El historial formal se guarda al cerrar la rutina.</p>
-          <div class="mini-grid">
-            <div class="mini"><strong id="routineCount">0</strong><span>rutinas</span></div>
-            <div class="mini"><strong id="historyCount">0</strong><span>cierres</span></div>
-            <div class="mini"><strong id="percentDone">0%</strong><span>avance</span></div>
-          </div>
-        </aside>
-      </div>
-      <div class="hero-line" aria-hidden="true"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
-      <a class="scroll-cue" href="#rutinas" aria-label="Bajar">↓</a>
-    </header>
-
-    <main>
-      <section class="section intro reveal" id="resumen">
-        <div class="section-title left">
-          <span class="eyebrow">Modo de trabajo</span>
-          <h2>Rutinas simples, comprobantes claros.</h2>
-          <p>El cierre registra únicamente lo marcado como realizado y, si se activa la opción, también lista pendientes para control posterior.</p>
-        </div>
-        <div class="summary-card">
-          <h3>Funciones incluidas</h3>
-          <div class="summary-list">
-            <div class="summary-item"><span>1</span><div><strong>Usuarios</strong><small>Acceso con correo y contraseña. El administrador puede crear cuentas.</small></div></div>
-            <div class="summary-item"><span>2</span><div><strong>Historial</strong><small>Cada cierre queda guardado en SQLite y asociado al usuario.</small></div></div>
-            <div class="summary-item"><span>3</span><div><strong>Comprobante</strong><small>Vista imprimible/PDF con fecha y hora de cierre.</small></div></div>
-            <div class="summary-item"><span>4</span><div><strong>Exportación</strong><small>CSV y JSON por cierre, más CSV general del historial.</small></div></div>
-          </div>
-        </div>
-      </section>
-
-      <section class="section reveal" id="rutinas">
-        <div class="section-title">
-          <span class="eyebrow">Checklist</span>
-          <h2>Frecuencias de limpieza</h2>
-          <p>Seleccioná tareas realizadas. En móvil las rutinas se muestran en una sola columna para trabajar más rápido.</p>
-        </div>
-        <div class="routine-toolbar">
-          <input id="taskSearch" type="search" placeholder="Buscar tarea, zona o rutina">
-          <button class="btn small" type="button" id="closeRunToolbar">Cerrar rutina</button>
-          <button class="btn small ghost-blue" type="button" id="clearChecksBtn">Limpiar checks</button>
-        </div>
-        <div id="routineContainer" class="routine-stack"></div>
-      </section>
-
-      <section class="history-section reveal" id="historial">
-        <div class="section-title">
-          <span class="eyebrow">Validación</span>
-          <h2>Historial de cierres</h2>
-          <p>Registro persistente de comprobantes generados.</p>
-        </div>
-        <div class="history-actions">
-          <button class="btn small" type="button" id="reloadHistoryBtn">Actualizar</button>
-          <a class="btn small ghost-blue" href="/api/export/runs.csv">Exportar historial CSV</a>
-        </div>
-        <div id="historyList" class="history-list"></div>
-      </section>
-
-      <section class="calendar-section reveal" id="calendario">
-        <div class="section-title">
-          <span class="eyebrow">Calendario</span>
-          <h2>Reportes por mes</h2>
-          <p>Días con cierres guardados en el historial.</p>
-        </div>
-        <div class="calendar-card">
-          <div class="calendar-topbar">
-            <button class="icon-button" type="button" id="prevMonthBtn" aria-label="Mes anterior">‹</button>
-            <h3 id="calendarMonthLabel">Mes</h3>
-            <button class="icon-button" type="button" id="nextMonthBtn" aria-label="Mes siguiente">›</button>
-          </div>
-          <div class="calendar-weekdays" aria-hidden="true">
-            <span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span><span>Dom</span>
-          </div>
-          <div id="calendarGrid" class="calendar-grid"></div>
-          <div id="calendarDetails" class="calendar-details"></div>
-        </div>
-      </section>
-
-      <section class="users-section reveal" id="usuarios" hidden>
-        <div class="section-title">
-          <span class="eyebrow">Administración</span>
-          <h2>Usuarios</h2>
-          <p>Alta rápida de usuarios para registrar cierres por responsable.</p>
-        </div>
-        <form id="userForm" class="user-form">
-          <label>Nombre<input type="text" id="newUserName" required placeholder="Nombre"></label>
-          <label>Correo<input type="email" id="newUserEmail" required placeholder="usuario@dominio.com"></label>
-          <label>Contraseña<input type="password" id="newUserPassword" required minlength="8" placeholder="Mínimo 8 caracteres"></label>
-          <label>Rol<select id="newUserRole"><option value="user">Usuario</option><option value="admin">Administrador</option></select></label>
-          <button class="btn small" type="submit">Crear usuario</button>
-        </form>
-        <div id="usersList" class="users-list"></div>
-      </section>
-    </main>
-
-    <footer>
-      <span>Checklist de limpieza y orden del hogar</span>
-      <span>Dashboard local · SQLite · Docker</span>
-    </footer>
-
-    <nav class="mobile-bar" aria-label="Navegación móvil">
-      <a href="#rutinas">Checklist</a>
-      <a href="#historial">Historial</a>
-      <button type="button" id="closeRunMobile">Cerrar</button>
-      <a href="#calendario">Calendario</a>
-    </nav>
-
-    <div class="floating-tools" aria-label="Herramientas rápidas">
-      <button class="tool-button" type="button" id="closeRunFloat" title="Cerrar rutina">✓</button>
-      <button class="tool-button" type="button" id="clearChecksFloat" title="Limpiar marcas">↺</button>
     </div>
   </div>
 
-  <dialog class="modal" id="closeRunModal">
-    <form method="dialog" class="modal-card" id="closeRunForm">
-      <div class="modal-head">
-        <div>
-          <span class="eyebrow">Cierre de rutina</span>
-          <h2>Generar comprobante</h2>
+  <div id="appShell" hidden>
+    <div class="shell">
+      <aside class="sidebar">
+        <div class="sidebar-top">
+          <div class="brand-panel">
+            <div class="brand-mark" aria-hidden="true"></div>
+            <div>
+              <strong>Checklist Hogar</strong>
+              <small>Panel LAN</small>
+            </div>
+          </div>
+          <div class="user-card">
+            <span class="eyebrow">Sesión</span>
+            <strong id="sidebarUserName">Administrador</strong>
+            <p id="sidebarUserMeta">admin</p>
+          </div>
         </div>
-        <button class="icon-button" type="button" id="closeModalBtn" aria-label="Cerrar">×</button>
+        <nav class="sidebar-nav" aria-label="Navegación principal">
+          <button type="button" class="nav-link" data-view-target="home">Inicio</button>
+          <button type="button" class="nav-link" data-view-target="checklist">Checklist</button>
+          <button type="button" class="nav-link" data-view-target="close">Cerrar rutina</button>
+          <button type="button" class="nav-link" data-view-target="history">Historial</button>
+          <button type="button" class="nav-link" data-view-target="calendar">Calendario</button>
+          <button type="button" class="nav-link admin-only" data-view-target="admin" hidden>Administración</button>
+        </nav>
+        <div class="sidebar-foot">
+          <button class="btn ghost-blue full" type="button" id="logoutBtn">Cerrar sesión</button>
+        </div>
+      </aside>
+
+      <div class="shell-main">
+        <header class="topbar">
+          <div>
+            <span class="eyebrow" id="viewEyebrow">Inicio</span>
+            <h1 id="viewTitle">Resumen operativo</h1>
+          </div>
+          <div class="topbar-actions">
+            <button class="btn ghost-blue" type="button" id="quickChecklistBtn">Checklist</button>
+            <button class="btn" type="button" id="quickCloseBtn">Cerrar rutina</button>
+          </div>
+        </header>
+
+        <main class="views">
+          <section class="view-panel" id="view-home">
+            <div class="panel-grid home-grid">
+              <article class="surface hero-panel">
+                <span class="eyebrow light">Resumen</span>
+                <h2>Todo el trabajo queda dividido por vistas y secciones.</h2>
+                <p>Usá el checklist por frecuencia, cerrá solo la sección activa y consultá historial o calendario sin arrastrar una pantalla interminable.</p>
+                <div class="hero-actions">
+                  <button class="btn" type="button" id="homeChecklistBtn">Abrir checklist</button>
+                  <button class="btn ghost-blue" type="button" id="homeCloseBtn">Cerrar una rutina</button>
+                </div>
+              </article>
+              <article class="surface stats-panel">
+                <div class="stat-grid" id="homeStats"></div>
+              </article>
+            </div>
+            <div class="panel-grid split-grid">
+              <article class="surface">
+                <div class="panel-head">
+                  <div>
+                    <span class="eyebrow">Secciones</span>
+                    <h3>Accesos rápidos</h3>
+                  </div>
+                </div>
+                <div class="quick-list" id="homeRoutineButtons"></div>
+              </article>
+              <article class="surface">
+                <div class="panel-head">
+                  <div>
+                    <span class="eyebrow">Actividad</span>
+                    <h3>Últimos cierres</h3>
+                  </div>
+                  <button class="ghost-chip" type="button" data-view-target="history">Ver historial</button>
+                </div>
+                <div id="homeHistoryPreview" class="stack-list"></div>
+              </article>
+            </div>
+          </section>
+
+          <section class="view-panel" id="view-checklist" hidden>
+            <article class="surface section-shell">
+              <div class="panel-head panel-head-stack">
+                <div>
+                  <span class="eyebrow">Checklist</span>
+                  <h3>Tareas por frecuencia</h3>
+                  <p>Se muestra una sola sección a la vez para evitar scroll infinito.</p>
+                </div>
+                <div class="section-toolbar">
+                  <input id="taskSearch" type="search" placeholder="Buscar tarea o zona en la sección activa">
+                  <button class="btn ghost-blue" type="button" id="saveProgressBtn">Guardar avance</button>
+                  <button class="btn" type="button" id="openCloseFromChecklistBtn">Cerrar sección</button>
+                  <button class="btn ghost-blue" type="button" id="clearSectionBtn">Limpiar sección</button>
+                </div>
+              </div>
+              <div class="subnav-tabs" id="checklistTabs"></div>
+              <div class="section-summary" id="checklistSummary"></div>
+              <div class="progress-card">
+                <div class="progress-top">
+                  <strong id="sectionProgressText">0 de 0 completadas</strong>
+                  <span id="sectionProgressPercent">0%</span>
+                </div>
+                <div class="progress-bar"><span id="sectionProgressBar"></span></div>
+              </div>
+              <div class="task-list single-column" id="checklistTaskList"></div>
+            </article>
+          </section>
+
+          <section class="view-panel" id="view-close" hidden>
+            <article class="surface close-shell">
+              <div class="panel-head">
+                <div>
+                  <span class="eyebrow">Cerrar rutina</span>
+                  <h3>Generar comprobante por sección</h3>
+                  <p>El porcentaje se calcula solo sobre la sección elegida, salvo que selecciones todas las secciones.</p>
+                </div>
+              </div>
+              <form id="closeRunForm" class="close-form">
+                <div class="close-grid">
+                  <label>Fecha
+                    <input type="text" id="closeDate" readonly>
+                  </label>
+                  <label>Hora
+                    <input type="text" id="closeTime" readonly>
+                  </label>
+                  <label>Responsable
+                    <input type="text" id="closeResponsible" required>
+                  </label>
+                  <label>Sección
+                    <select id="closeRoutine"></select>
+                  </label>
+                </div>
+                <label>Observaciones
+                  <textarea id="closeObservations" rows="4" placeholder="Notas generales para el cierre"></textarea>
+                </label>
+                <label class="switch-row">
+                  <input type="checkbox" id="includePending" checked>
+                  <span>Incluir pendientes en el comprobante</span>
+                </label>
+                <div class="close-preview" id="closePreview"></div>
+                <div class="action-row">
+                  <button class="btn ghost-blue" type="button" id="resetCloseViewBtn">Recargar vista</button>
+                  <button class="btn" type="submit">Guardar cierre y abrir comprobante</button>
+                </div>
+              </form>
+            </article>
+          </section>
+
+          <section class="view-panel" id="view-history" hidden>
+            <article class="surface">
+              <div class="panel-head">
+                <div>
+                  <span class="eyebrow">Historial</span>
+                  <h3>Cierres guardados</h3>
+                </div>
+                <div class="action-row compact">
+                  <button class="btn ghost-blue" type="button" id="reloadHistoryBtn">Actualizar</button>
+                  <a class="btn" href="/api/export/runs.csv">Exportar CSV</a>
+                </div>
+              </div>
+              <div id="historyList" class="stack-list"></div>
+            </article>
+          </section>
+
+          <section class="view-panel" id="view-calendar" hidden>
+            <article class="surface">
+              <div class="panel-head">
+                <div>
+                  <span class="eyebrow">Calendario</span>
+                  <h3>Reportes por mes</h3>
+                </div>
+              </div>
+              <div class="calendar-topbar">
+                <button class="icon-button" type="button" id="prevMonthBtn" aria-label="Mes anterior">‹</button>
+                <h3 id="calendarMonthLabel">Mes</h3>
+                <button class="icon-button" type="button" id="nextMonthBtn" aria-label="Mes siguiente">›</button>
+              </div>
+              <div class="calendar-weekdays" aria-hidden="true">
+                <span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span><span>Dom</span>
+              </div>
+              <div id="calendarGrid" class="calendar-grid"></div>
+              <div id="calendarDetails" class="calendar-details"></div>
+            </article>
+          </section>
+
+          <section class="view-panel" id="view-admin" hidden>
+            <article class="surface" id="adminAccessPanel">
+              <div class="panel-head">
+                <div>
+                  <span class="eyebrow">Administración</span>
+                  <h3>Gestión de ítems del checklist</h3>
+                  <p>Solo el administrador puede crear, editar o desactivar tareas.</p>
+                </div>
+              </div>
+              <div id="adminDenied" class="empty-state" hidden>
+                <strong>Acceso restringido</strong>
+                <p>Esta vista solo está disponible para administradores.</p>
+              </div>
+              <div id="adminContent">
+                <div class="panel-grid split-grid admin-grid">
+                  <article class="surface inset-surface">
+                    <div class="panel-head">
+                      <div>
+                        <span class="eyebrow">Ítems</span>
+                        <h3>Checklist por sección</h3>
+                      </div>
+                    </div>
+                    <div class="admin-toolbar">
+                      <label>Sección
+                        <select id="adminSectionFilter"></select>
+                      </label>
+                      <label class="toggle-field">
+                        <input type="checkbox" id="showInactiveItems">
+                        <span>Mostrar inactivos</span>
+                      </label>
+                    </div>
+                    <form id="itemForm" class="form-grid admin-form compact-form">
+                      <input type="hidden" id="itemId">
+                      <label>Título
+                        <input type="text" id="itemTitle" required placeholder="Ej.: Limpiar estantes">
+                      </label>
+                      <label>Zona
+                        <input type="text" id="itemZone" required placeholder="Ej.: Cocina">
+                      </label>
+                      <label>Orden
+                        <input type="number" id="itemOrder" min="0" step="1" required>
+                      </label>
+                      <label class="toggle-field">
+                        <input type="checkbox" id="itemActive" checked>
+                        <span>Activo</span>
+                      </label>
+                      <div class="action-row compact full-span">
+                        <button class="btn ghost-blue" type="button" id="resetItemFormBtn">Nuevo ítem</button>
+                        <button class="btn" type="submit" id="saveItemBtn">Guardar ítem</button>
+                      </div>
+                    </form>
+                    <div id="adminItemsList" class="stack-list"></div>
+                  </article>
+                  <article class="surface inset-surface">
+                    <div class="panel-head">
+                      <div>
+                        <span class="eyebrow">Usuarios</span>
+                        <h3>Alta rápida</h3>
+                      </div>
+                    </div>
+                    <form id="userForm" class="form-grid compact-form">
+                      <label>Nombre
+                        <input type="text" id="newUserName" required placeholder="Nombre">
+                      </label>
+                      <label>Correo
+                        <input type="email" id="newUserEmail" required placeholder="usuario@dominio.com">
+                      </label>
+                      <label>Contraseña
+                        <input type="password" id="newUserPassword" required minlength="8" placeholder="Mínimo 8 caracteres">
+                      </label>
+                      <label>Rol
+                        <select id="newUserRole"><option value="user">Usuario</option><option value="admin">Administrador</option></select>
+                      </label>
+                      <button class="btn" type="submit">Crear usuario</button>
+                    </form>
+                    <div id="usersList" class="stack-list"></div>
+                  </article>
+                </div>
+              </div>
+            </article>
+          </section>
+        </main>
       </div>
-      <div class="modal-grid">
-        <label>Fecha
-          <input type="text" id="closeDate" readonly>
-        </label>
-        <label>Hora
-          <input type="text" id="closeTime" readonly>
-        </label>
-        <label>Responsable
-          <input type="text" id="closeResponsible" required>
-        </label>
-        <label>Rutina
-          <select id="closeRoutine"></select>
-        </label>
-      </div>
-      <label class="wide-label">Observaciones
-        <textarea id="closeObservations" rows="4" placeholder="Ej.: quedó pendiente comprar bolsas, revisar humedad, etc."></textarea>
-      </label>
-      <label class="switch-row">
-        <input type="checkbox" id="includePending" checked>
-        <span>Incluir tareas pendientes en el comprobante</span>
-      </label>
-      <div class="close-preview" id="closePreview"></div>
-      <div class="modal-actions">
-        <button class="btn ghost-blue" type="button" id="cancelCloseBtn">Cancelar</button>
-        <button class="btn" type="submit">Guardar cierre y abrir comprobante</button>
-      </div>
-    </form>
-  </dialog>
+    </div>
+
+    <nav class="mobile-nav" aria-label="Navegación móvil">
+      <button type="button" class="mobile-link" data-view-target="home">Inicio</button>
+      <button type="button" class="mobile-link" data-view-target="checklist">Checklist</button>
+      <button type="button" class="mobile-link" data-view-target="close">Cerrar</button>
+      <button type="button" class="mobile-link" data-view-target="history">Historial</button>
+      <button type="button" class="mobile-link" id="mobileMoreBtn">Más</button>
+    </nav>
+
+    <div class="mobile-more" id="mobileMoreMenu" hidden>
+      <button type="button" class="mobile-more-link" data-view-target="calendar">Calendario</button>
+      <button type="button" class="mobile-more-link admin-only" data-view-target="admin" hidden>Administración</button>
+      <button type="button" class="mobile-more-link" id="mobileLogoutBtn">Cerrar sesión</button>
+    </div>
+  </div>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <script src="/static/app.js"></script>

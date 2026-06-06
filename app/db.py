@@ -64,7 +64,8 @@ def init_db() -> None:
                 routine_id TEXT NOT NULL REFERENCES routines(id) ON DELETE CASCADE,
                 title TEXT NOT NULL,
                 zone TEXT NOT NULL,
-                sort_order INTEGER NOT NULL
+                sort_order INTEGER NOT NULL,
+                active INTEGER NOT NULL DEFAULT 1
             );
 
             CREATE TABLE IF NOT EXISTS runs (
@@ -98,8 +99,17 @@ def init_db() -> None:
             CREATE INDEX IF NOT EXISTS idx_run_tasks_run ON run_tasks(run_id);
             """
         )
+        ensure_task_columns(conn)
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_tasks_routine_active ON tasks(routine_id, active, sort_order)")
         seed_checklist(conn)
         seed_admin(conn)
+
+
+def ensure_task_columns(conn: sqlite3.Connection) -> None:
+    columns = {row['name'] for row in conn.execute('PRAGMA table_info(tasks)').fetchall()}
+    if 'active' not in columns:
+        conn.execute('ALTER TABLE tasks ADD COLUMN active INTEGER NOT NULL DEFAULT 1')
+        conn.execute('UPDATE tasks SET active = 1 WHERE active IS NULL')
 
 
 def seed_checklist(conn: sqlite3.Connection) -> None:
@@ -114,20 +124,20 @@ def seed_checklist(conn: sqlite3.Connection) -> None:
                 description = excluded.description,
                 sort_order = excluded.sort_order
             """,
-            (routine["id"], routine["title"], routine["frequency"], routine["description"], routine["sort_order"]),
+            (routine['id'], routine['title'], routine['frequency'], routine['description'], routine['sort_order']),
         )
-        for order, (task_id, title, zone) in enumerate(routine["tasks"], start=1):
+        for order, (task_id, title, zone) in enumerate(routine['tasks'], start=1):
             conn.execute(
                 """
-                INSERT INTO tasks (id, routine_id, title, zone, sort_order)
-                VALUES (?, ?, ?, ?, ?)
+                INSERT INTO tasks (id, routine_id, title, zone, sort_order, active)
+                VALUES (?, ?, ?, ?, ?, 1)
                 ON CONFLICT(id) DO UPDATE SET
                     routine_id = excluded.routine_id,
                     title = excluded.title,
                     zone = excluded.zone,
                     sort_order = excluded.sort_order
                 """,
-                (task_id, routine["id"], title, zone, order),
+                (task_id, routine['id'], title, zone, order),
             )
 
 
