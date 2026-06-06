@@ -3,8 +3,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Checklist Hogar</title>
-  <meta name="theme-color" content="#0B5ED7">
+  <title>🏠 Checklist Hogar</title>
+  <meta name="theme-color" content="#0B5ED7" id="themeColorMeta">
+  <link rel="icon" type="image/svg+xml" href="/static/icons/icon-192.svg?v=2">
+  <link rel="shortcut icon" type="image/svg+xml" href="/static/icons/icon-192.svg?v=2">
+  <link rel="apple-touch-icon" href="/static/icons/icon-192.svg?v=2">
   <link rel="manifest" href="/static/manifest.json">
   <link rel="stylesheet" href="/static/styles.css">
 </head>
@@ -33,30 +36,32 @@
   <div id="appShell" hidden>
     <div class="shell">
       <aside class="sidebar">
-        <div class="sidebar-top">
-          <div class="brand-panel">
-            <div class="brand-mark" aria-hidden="true"></div>
-            <div>
-              <strong>Checklist Hogar</strong>
-              <small>Solo red local</small>
+        <div class="sidebar-inner">
+          <div class="sidebar-top">
+            <div class="brand-panel">
+              <div class="brand-mark" aria-hidden="true"></div>
+              <div>
+                <strong>Checklist Hogar</strong>
+                <small>Solo red local</small>
+              </div>
+            </div>
+            <div class="user-card">
+              <span class="eyebrow">Sesión</span>
+              <strong id="sidebarUserName">admin</strong>
+              <p id="sidebarUserMeta">Administrador</p>
             </div>
           </div>
-          <div class="user-card">
-            <span class="eyebrow">Sesión</span>
-            <strong id="sidebarUserName">admin</strong>
-            <p id="sidebarUserMeta">Administrador</p>
+          <nav class="sidebar-nav" aria-label="Navegación principal">
+            <button type="button" class="nav-link" data-view-target="home">Inicio</button>
+            <button type="button" class="nav-link" data-view-target="checklist">Checklist</button>
+            <button type="button" class="nav-link writer-only" data-view-target="close">Generar cierre</button>
+            <button type="button" class="nav-link" data-view-target="history">Historial</button>
+            <button type="button" class="nav-link" data-view-target="calendar">Calendario</button>
+            <button type="button" class="nav-link admin-only" data-view-target="admin" hidden>Administración</button>
+          </nav>
+          <div class="sidebar-foot">
+            <button class="btn ghost-blue full" type="button" id="logoutBtn">Cerrar sesión</button>
           </div>
-        </div>
-        <nav class="sidebar-nav" aria-label="Navegación principal">
-          <button type="button" class="nav-link" data-view-target="home">Inicio</button>
-          <button type="button" class="nav-link" data-view-target="checklist">Checklist</button>
-          <button type="button" class="nav-link writer-only" data-view-target="close">Generar cierre</button>
-          <button type="button" class="nav-link" data-view-target="history">Historial</button>
-          <button type="button" class="nav-link" data-view-target="calendar">Calendario</button>
-          <button type="button" class="nav-link admin-only" data-view-target="admin" hidden>Administración</button>
-        </nav>
-        <div class="sidebar-foot">
-          <button class="btn ghost-blue full" type="button" id="logoutBtn">Cerrar sesión</button>
         </div>
       </aside>
 
@@ -66,9 +71,17 @@
             <span class="eyebrow" id="viewEyebrow">Inicio</span>
             <h1 id="viewTitle">Resumen local</h1>
           </div>
-          <div class="topbar-actions writer-only">
-            <button class="btn ghost-blue" type="button" id="quickChecklistBtn">Checklist</button>
-            <button class="btn" type="button" id="quickCloseBtn">Generar cierre</button>
+          <div class="topbar-tools">
+            <section class="theme-switcher theme-dropdown" aria-label="Color de interfaz" data-theme-dropdown>
+              <button type="button" class="theme-toggle-btn" id="themeToggleDesktop" data-theme-toggle aria-expanded="false" aria-controls="themeMenuDesktop" aria-label="Abrir selector de color">COLOR</button>
+              <div class="theme-menu" id="themeMenuDesktop" role="menu" hidden>
+                <div class="theme-option-list" id="themePickerDesktop" aria-label="Selector de color"></div>
+              </div>
+            </section>
+            <div class="topbar-actions writer-only">
+              <button class="btn ghost-blue" type="button" id="quickChecklistBtn">Checklist</button>
+              <button class="btn" type="button" id="quickCloseBtn">Generar cierre</button>
+            </div>
           </div>
         </header>
 
@@ -351,6 +364,12 @@
     </nav>
 
     <div class="mobile-more" id="mobileMoreMenu" hidden>
+      <section class="theme-switcher theme-dropdown mobile-theme-switcher" aria-label="Color de interfaz" data-theme-dropdown>
+        <button type="button" class="theme-toggle-btn" id="themeToggleMobile" data-theme-toggle aria-expanded="false" aria-controls="themeMenuMobile" aria-label="Abrir selector de color">COLOR</button>
+        <div class="theme-menu" id="themeMenuMobile" role="menu" hidden>
+          <div class="theme-option-list" id="themePickerMobile" aria-label="Selector de color móvil"></div>
+        </div>
+      </section>
       <button type="button" class="mobile-more-link" data-view-target="calendar">Calendario</button>
       <button type="button" class="mobile-more-link admin-only" data-view-target="admin" hidden>Administración</button>
       <button type="button" class="mobile-more-link" id="mobileLogoutBtn">Cerrar sesión</button>

@@ -1,6 +1,80 @@
 import { $, $$, api, toast, escapeHtml } from '/static/api.js';
-import { formatDateKey, formatDateTimeLocal, formatMonthLabel, isPastDateKey, localDateKey, monthKey, parseDateKey } from '/static/date.js';
+import { formatDateKey, formatDateTimeLocal, formatMonthLabel, isPastDateKey, localDateKey, monthKey } from '/static/date.js';
 import { ROLE_LABELS, VIEW_META, state } from '/static/state.js';
+
+const THEMES = {
+  blue: {
+    label: 'Azul',
+    primary: '#0B5ED7',
+    primaryDark: '#0D3B94',
+    primaryDeep: '#0C2F77',
+    primarySoft: '#EAF3FF',
+    accent: '#1A73E8',
+    primaryRgb: '11,94,215',
+    primaryDarkRgb: '13,59,148'
+  },
+  green: {
+    label: 'Verde',
+    primary: '#169C6B',
+    primaryDark: '#0F7A54',
+    primaryDeep: '#0B5C40',
+    primarySoft: '#E6F7F0',
+    accent: '#1FB981',
+    primaryRgb: '22,156,107',
+    primaryDarkRgb: '15,122,84'
+  },
+  violet: {
+    label: 'Violeta',
+    primary: '#7C3AED',
+    primaryDark: '#5B21B6',
+    primaryDeep: '#4C1D95',
+    primarySoft: '#F0E8FF',
+    accent: '#8B5CF6',
+    primaryRgb: '124,58,237',
+    primaryDarkRgb: '91,33,182'
+  },
+  orange: {
+    label: 'Naranja',
+    primary: '#F97316',
+    primaryDark: '#C2410C',
+    primaryDeep: '#9A3412',
+    primarySoft: '#FFF1E8',
+    accent: '#FB923C',
+    primaryRgb: '249,115,22',
+    primaryDarkRgb: '194,65,12'
+  },
+  red: {
+    label: 'Rojo',
+    primary: '#DC2626',
+    primaryDark: '#B91C1C',
+    primaryDeep: '#7F1D1D',
+    primarySoft: '#FEECEC',
+    accent: '#EF4444',
+    primaryRgb: '220,38,38',
+    primaryDarkRgb: '185,28,28'
+  },
+  slate: {
+    label: 'Gris oscuro',
+    primary: '#475569',
+    primaryDark: '#334155',
+    primaryDeep: '#1E293B',
+    primarySoft: '#E9EEF5',
+    accent: '#64748B',
+    primaryRgb: '71,85,105',
+    primaryDarkRgb: '51,65,85'
+  },
+  barbie: {
+    label: 'Rosa Barbie',
+    primary: '#E0218A',
+    primaryDark: '#B5166E',
+    primaryDeep: '#8F1457',
+    primarySoft: '#FCE7F3',
+    accent: '#F04BA5',
+    primaryRgb: '224,33,138',
+    primaryDarkRgb: '181,22,110'
+  }
+};
+const DEFAULT_THEME = 'blue';
 
 function routineById(routineId) {
   return state.routines.find((routine) => routine.id === routineId) || null;
@@ -13,6 +87,81 @@ function allTasks() {
 function storageKey(taskId, type = 'checked') {
   const userId = state.user?.id || 'guest';
   return `checklist-hogar:${userId}:${type}:${taskId}`;
+}
+
+function themeStorageKey(username) {
+  return `checklist-theme-color:${(username || 'guest').toLowerCase()}`;
+}
+
+function currentThemeName() {
+  return state.themeName || DEFAULT_THEME;
+}
+
+function applyTheme(themeName) {
+  const name = THEMES[themeName] ? themeName : DEFAULT_THEME;
+  const theme = THEMES[name];
+  const root = document.documentElement;
+  root.style.setProperty('--primary', theme.primary);
+  root.style.setProperty('--primary-dark', theme.primaryDark);
+  root.style.setProperty('--primary-deep', theme.primaryDeep);
+  root.style.setProperty('--primary-soft', theme.primarySoft);
+  root.style.setProperty('--accent', theme.accent);
+  root.style.setProperty('--primary-rgb', theme.primaryRgb);
+  root.style.setProperty('--primary-dark-rgb', theme.primaryDarkRgb);
+  const meta = $('#themeColorMeta');
+  if (meta) meta.setAttribute('content', theme.primary);
+  state.themeName = name;
+  renderThemePicker();
+}
+
+function loadThemeForCurrentUser() {
+  const stored = localStorage.getItem(themeStorageKey(state.user?.username));
+  applyTheme(stored || DEFAULT_THEME);
+}
+
+function saveThemeForCurrentUser(themeName) {
+  if (!state.user?.username) return;
+  localStorage.setItem(themeStorageKey(state.user.username), themeName);
+}
+
+function renderThemePicker() {
+  const markup = Object.entries(THEMES).map(([name, theme]) => `
+    <button
+      type="button"
+      class="theme-option ${currentThemeName() === name ? 'is-active' : ''}"
+      data-theme-select="${name}"
+      aria-label="Usar color ${escapeHtml(theme.label)}"
+      aria-pressed="${currentThemeName() === name ? 'true' : 'false'}"
+      title="${escapeHtml(theme.label)}"
+    >
+      <span class="theme-option-swatch" aria-hidden="true" style="--swatch-color:${theme.primary};--swatch-dark:${theme.primaryDark};"></span>
+      <span class="theme-option-label">${escapeHtml(theme.label)}</span>
+    </button>
+  `).join('');
+  ['#themePickerDesktop', '#themePickerMobile'].forEach((selector) => {
+    const container = $(selector);
+    if (container) container.innerHTML = markup;
+  });
+}
+
+function closeThemeMenus() {
+  $$('[data-theme-toggle]').forEach((button) => {
+    button.setAttribute('aria-expanded', 'false');
+  });
+  ['#themeMenuDesktop', '#themeMenuMobile'].forEach((selector) => {
+    const menu = $(selector);
+    if (menu) menu.hidden = true;
+  });
+}
+
+function toggleThemeMenu(button) {
+  const menuId = button?.getAttribute('aria-controls');
+  const menu = menuId ? document.getElementById(menuId) : null;
+  if (!menu) return;
+  const next = menu.hidden;
+  closeThemeMenus();
+  menu.hidden = !next;
+  button.setAttribute('aria-expanded', String(next));
 }
 
 function taskChecked(taskId) {
@@ -122,6 +271,7 @@ function renderNavState() {
 function closeMobileMenu() {
   $('#mobileMoreMenu').hidden = true;
   $('#mobileMoreBtn').setAttribute('aria-expanded', 'false');
+  closeThemeMenus();
 }
 
 async function setView(view) {
@@ -151,6 +301,7 @@ async function loadChecklist() {
   state.checklistSectionId ||= state.routines[0]?.id || null;
   state.closeRoutineId ||= state.checklistSectionId || 'all';
   state.adminSectionId ||= state.checklistSectionId;
+  loadThemeForCurrentUser();
   syncUserChrome();
   fillRoutineSelect();
   fillAdminSectionSelect();
@@ -610,7 +761,7 @@ async function submitUserForm(event) {
 
 async function saveUser(event) {
   event.preventDefault();
-  const form = event.target.closest("[data-user-form]");
+  const form = event.target.closest('[data-user-form]');
   const userId = form.dataset.userForm;
   const role = form.querySelector(`[data-user-role="${userId}"]`).value;
   const isActive = form.querySelector(`[data-user-active="${userId}"]`).checked;
@@ -686,6 +837,7 @@ async function logout() {
   state.backups = [];
   state.activity = [];
   state.lastRun = null;
+  applyTheme(DEFAULT_THEME);
   showLogin();
 }
 
@@ -720,6 +872,7 @@ async function bootApp() {
   showApp();
   syncUserChrome();
   renderNavState();
+  renderThemePicker();
   renderHome();
   renderChecklistView();
   renderCloseView();
@@ -728,6 +881,8 @@ async function bootApp() {
 }
 
 async function init() {
+  renderThemePicker();
+  applyTheme(DEFAULT_THEME);
   bindStaticEvents();
   try {
     const payload = await api('/api/users/me');
@@ -825,11 +980,29 @@ function bindStaticEvents() {
   $('#createBackupBtn').addEventListener('click', createBackup);
   $('#mobileMoreBtn').addEventListener('click', () => {
     const next = $('#mobileMoreMenu').hidden;
+    if (!next) closeThemeMenus();
     $('#mobileMoreMenu').hidden = !next;
     $('#mobileMoreBtn').setAttribute('aria-expanded', String(next));
   });
 
   document.addEventListener('click', async (event) => {
+    const themeToggleButton = event.target.closest('[data-theme-toggle]');
+    if (themeToggleButton) {
+      toggleThemeMenu(themeToggleButton);
+      return;
+    }
+
+    const themeButton = event.target.closest('[data-theme-select]');
+    if (themeButton) {
+      const themeName = themeButton.dataset.themeSelect;
+      applyTheme(themeName);
+      saveThemeForCurrentUser(themeName);
+      closeThemeMenus();
+      return;
+    }
+
+    if (!event.target.closest('[data-theme-dropdown]')) closeThemeMenus();
+
     const viewButton = event.target.closest('[data-view-target]');
     if (viewButton) {
       const targetView = viewButton.dataset.viewTarget;
@@ -885,6 +1058,10 @@ function bindStaticEvents() {
       return;
     }
     if (!event.target.closest('#mobileMoreMenu') && !event.target.closest('#mobileMoreBtn')) closeMobileMenu();
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') closeThemeMenus();
   });
 
   document.addEventListener('change', (event) => {

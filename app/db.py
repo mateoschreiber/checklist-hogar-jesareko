@@ -190,7 +190,6 @@ def init_db() -> None:
 
             CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions(token_hash);
             CREATE INDEX IF NOT EXISTS idx_runs_user_date ON runs(user_id, server_closed_at DESC);
-            CREATE INDEX IF NOT EXISTS idx_runs_local_date ON runs(local_date);
             CREATE INDEX IF NOT EXISTS idx_run_tasks_run ON run_tasks(run_id);
             CREATE INDEX IF NOT EXISTS idx_activity_logs_created_at ON activity_logs(created_at DESC);
             """
@@ -198,6 +197,7 @@ def init_db() -> None:
         ensure_schema(conn)
         conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username ON users(username COLLATE NOCASE)")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_tasks_routine_active ON tasks(routine_id, active, sort_order)")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_runs_local_date ON runs(local_date)")
         seed_checklist(conn)
         seed_admin(conn)
 
