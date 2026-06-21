@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
+  <a class="skip-link" href="#mainContent">Saltar al contenido principal</a>
   <div class="login-screen" id="loginScreen">
     <div class="login-card">
       <div class="brand-login">
@@ -28,7 +29,7 @@
           <input type="password" id="loginPassword" autocomplete="current-password" required placeholder="********">
         </label>
         <button class="btn full" type="submit">Ingresar</button>
-        <p class="error" id="loginError"></p>
+        <p class="error" id="loginError" role="alert" aria-live="assertive"></p>
       </form>
     </div>
   </div>
@@ -85,7 +86,7 @@
           </div>
         </header>
 
-        <main class="views">
+        <main class="views" id="mainContent" tabindex="-1">
           <div class="status-banner" id="globalStatus" data-tone="info" hidden></div>
 
           <section class="view-panel" id="view-home">
@@ -173,14 +174,14 @@
                     <input type="time" id="closeTime" required>
                   </label>
                   <label for="closeResponsible">Responsable
-                    <input type="text" id="closeResponsible" required>
+                    <input type="text" id="closeResponsible" maxlength="120" autocomplete="name" required>
                   </label>
                   <label for="closeRoutine">Sección
                     <select id="closeRoutine"></select>
                   </label>
                 </div>
                 <label for="closeObservations">Observación general
-                  <textarea id="closeObservations" rows="4" placeholder="Notas generales para este cierre"></textarea>
+                  <textarea id="closeObservations" rows="4" maxlength="3000" placeholder="Notas generales para este cierre"></textarea>
                 </label>
                 <label class="switch-row">
                   <input type="checkbox" id="includePending" checked>
@@ -271,10 +272,10 @@
                     <form id="itemForm" class="form-grid admin-form compact-form">
                       <input type="hidden" id="itemId">
                       <label for="itemTitle">Título
-                        <input type="text" id="itemTitle" required>
+                        <input type="text" id="itemTitle" maxlength="240" required>
                       </label>
                       <label for="itemZone">Zona
-                        <input type="text" id="itemZone" required>
+                        <input type="text" id="itemZone" maxlength="160" required>
                       </label>
                       <label for="itemCategory">Categoría
                         <select id="itemCategory"></select>
@@ -307,10 +308,10 @@
                     </div>
                     <form id="userForm" class="form-grid compact-form">
                       <label for="newUsername">Usuario
-                        <input type="text" id="newUsername" required placeholder="usuario">
+                        <input type="text" id="newUsername" maxlength="80" autocomplete="off" required placeholder="usuario">
                       </label>
                       <label for="newUserPassword">Contraseña
-                        <input type="password" id="newUserPassword" required placeholder="admin">
+                        <input type="password" id="newUserPassword" maxlength="200" autocomplete="new-password" required placeholder="Contraseña temporal">
                       </label>
                       <label for="newUserRole">Rol
                         <select id="newUserRole">
@@ -360,7 +361,7 @@
       <button type="button" class="mobile-link" data-view-target="checklist">Checklist</button>
       <button type="button" class="mobile-link writer-only" data-view-target="close">Cerrar</button>
       <button type="button" class="mobile-link" data-view-target="history">Historial</button>
-      <button type="button" class="mobile-link" id="mobileMoreBtn" aria-expanded="false">Más</button>
+      <button type="button" class="mobile-link" id="mobileMoreBtn" aria-expanded="false" aria-controls="mobileMoreMenu">Más</button>
     </nav>
 
     <div class="mobile-more" id="mobileMoreMenu" hidden>

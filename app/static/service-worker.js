@@ -1,4 +1,4 @@
-const CACHE_NAME = 'checklist-hogar-v3';
+const CACHE_NAME = 'checklist-hogar-v5';
 const STATIC_ASSETS = [
   '/',
   '/static/index.html',
@@ -26,12 +26,14 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
-  if (url.pathname.startsWith('/api/')) return;
+  if (event.request.method !== 'GET' || url.pathname.startsWith('/api/')) return;
   event.respondWith(
     caches.match(event.request).then((cached) => {
       const request = fetch(event.request).then((response) => {
-        const clone = response.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone)).catch(() => {});
+        if (response.ok) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone)).catch(() => {});
+        }
         return response;
       }).catch(() => cached);
       return cached || request;

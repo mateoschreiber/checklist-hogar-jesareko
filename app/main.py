@@ -870,7 +870,11 @@ def admin_create_backup(admin: dict = Depends(require_admin)) -> dict:
     create_backup_file(plain_path)
     with plain_path.open("rb") as src, gzip.open(gzip_path, "wb") as dst:
         shutil.copyfileobj(src, dst)
-    plain_path.unlink(missing_ok=True)
+    try:
+        plain_path.unlink(missing_ok=True)
+    except OSError:
+        # The compressed backup is already valid; cleanup must not turn it into a failed operation.
+        pass
     cleanup_old_backups()
     with connect() as conn:
         log_activity(conn, admin["id"], "backup_created", "backup", filename)

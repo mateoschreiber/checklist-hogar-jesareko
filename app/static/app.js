@@ -265,6 +265,10 @@ function renderNavState() {
     if (active) button.setAttribute('aria-current', 'page');
     else button.removeAttribute('aria-current');
   });
+  const moreActive = ['calendar', 'admin'].includes(state.view);
+  $('#mobileMoreBtn').classList.toggle('is-active', moreActive);
+  if (moreActive) $('#mobileMoreBtn').setAttribute('aria-current', 'page');
+  else $('#mobileMoreBtn').removeAttribute('aria-current');
   $$('.view-panel').forEach((panel) => { panel.hidden = panel.id !== `view-${state.view}`; });
 }
 
@@ -275,6 +279,10 @@ function closeMobileMenu() {
 }
 
 async function setView(view) {
+  if (!VIEW_META[view]) view = 'home';
+  if (view === 'admin' && !isAdmin()) return;
+  if (view === 'close' && !canWrite()) return;
+  const changed = state.view !== view;
   state.view = view;
   renderNavState();
   closeMobileMenu();
@@ -290,6 +298,24 @@ async function setView(view) {
     renderCalendar();
   }
   if (view === 'admin') await loadAdminView();
+  if (changed) {
+    window.scrollTo({ top: 0, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+    $('#mainContent')?.focus({ preventScroll: true });
+  }
+}
+
+function setFormBusy(form, busy, busyLabel) {
+  const submit = form?.querySelector('[type="submit"]');
+  if (!submit) return;
+  if (busy) {
+    submit.dataset.label = submit.textContent;
+    submit.textContent = busyLabel;
+  } else if (submit.dataset.label) {
+    submit.textContent = submit.dataset.label;
+    delete submit.dataset.label;
+  }
+  submit.disabled = busy;
+  form.setAttribute('aria-busy', String(busy));
 }
 
 async function loadChecklist() {
@@ -777,6 +803,7 @@ async function saveUser(event) {
 
 async function submitCloseForm(event) {
   event.preventDefault();
+  const form = event.currentTarget;
   const routineId = $('#closeRoutine').value;
   const payload = {
     routine_id: routineId,
@@ -794,6 +821,7 @@ async function submitCloseForm(event) {
     return;
   }
   try {
+    setFormBusy(form, true, 'Guardando...');
     const result = await api('/api/runs', { method: 'POST', body: JSON.stringify(payload) });
     clearRoutineStorage(routineId);
     state.lastRun = result;
@@ -807,13 +835,17 @@ async function submitCloseForm(event) {
   } catch (error) {
     setStatus('Error al guardar', 'danger');
     throw error;
+  } finally {
+    setFormBusy(form, false);
   }
 }
 
 async function login(event) {
   event.preventDefault();
+  const form = event.currentTarget;
   $('#loginError').textContent = '';
   try {
+    setFormBusy(form, true, 'Ingresando...');
     const payload = await api('/api/auth/login', {
       method: 'POST',
       body: JSON.stringify({ username: $('#loginUsername').value.trim(), password: $('#loginPassword').value })
@@ -823,6 +855,8 @@ async function login(event) {
     toast('Sesión iniciada.', 'success');
   } catch (error) {
     $('#loginError').textContent = error.message;
+  } finally {
+    setFormBusy(form, false);
   }
 }
 
@@ -852,11 +886,24 @@ async function deleteRun(runId) {
 }
 
 async function createBackup() {
-  const result = await api('/api/admin/backups/create', { method: 'POST' });
-  await loadBackups();
-  await loadActivity();
-  renderAdminShell();
-  toast(`Backup creado: ${result.filename}`, 'success');
+  const button = $('#createBackupBtn');
+  const label = button.textContent;
+  button.disabled = true;
+  button.setAttribute('aria-busy', 'true');
+  button.textContent = 'Creando...';
+  try {
+    const result = await api('/api/admin/backups/create', { method: 'POST' });
+    await loadBackups();
+    await loadActivity();
+    renderAdminShell();
+    toast(`Backup creado: ${result.filename}`, 'success');
+  } catch (error) {
+    toast(error.message, 'danger');
+  } finally {
+    button.disabled = false;
+    button.removeAttribute('aria-busy');
+    button.textContent = label;
+  }
 }
 
 async function restoreBackup(filename) {
@@ -926,6 +973,7 @@ function bindStaticEvents() {
     setView('close');
   });
   $('#clearSectionBtn').addEventListener('click', () => {
+    if (!confirm('Se eliminará el avance local de esta sección.')) return;
     clearRoutineStorage(state.checklistSectionId);
     renderChecklistView();
     renderCloseView();
