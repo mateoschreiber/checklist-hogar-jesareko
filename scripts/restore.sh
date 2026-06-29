@@ -11,9 +11,11 @@ if [ ! -f "$SRC" ]; then
   exit 1
 fi
 mkdir -p "$(dirname "$DB_PATH")"
+TMP_DB="${DB_PATH}.restore.tmp"
 if echo "$SRC" | grep -q '\.gz$'; then
-  gunzip -c "$SRC" > "$DB_PATH"
+  gunzip -c "$SRC" > "$TMP_DB"
 else
-  cp "$SRC" "$DB_PATH"
+  cp "$SRC" "$TMP_DB"
 fi
+mv "$TMP_DB" "$DB_PATH"
 echo "Base restaurada en: $DB_PATH"
