@@ -26,15 +26,9 @@ def iso_now() -> str:
     return utc_now().isoformat()
 
 
-<<<<<<< HEAD
-def hash_password(password: str, iterations: int = 260_000) -> str:
-    if not password or len(password) < 8:
-        raise ValueError("La contrasena debe tener al menos 8 caracteres.")
-=======
 def hash_password(password: str, iterations: int = 260_000, min_length: int = 8) -> str:
     if not password or len(password) < min_length:
         raise ValueError(f"La contraseña debe tener al menos {min_length} caracteres.")
->>>>>>> 998f1df084449202d0ee5055565d63abfeb46b81
     salt = secrets.token_bytes(16)
     digest = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, iterations)
     return f"pbkdf2_sha256${iterations}${salt.hex()}${digest.hex()}"

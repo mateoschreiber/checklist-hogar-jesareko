@@ -1,13 +1,7 @@
 from __future__ import annotations
 
 import csv
-<<<<<<< HEAD
-import io
-import json
-import os
-=======
 import gzip
-import hashlib
 import io
 import json
 import os
@@ -15,7 +9,6 @@ import shutil
 import sqlite3
 import tempfile
 import uuid
->>>>>>> 998f1df084449202d0ee5055565d63abfeb46b81
 from datetime import datetime
 from html import escape
 from pathlib import Path
@@ -30,11 +23,7 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 
-<<<<<<< HEAD
 from .auth import create_token, hash_password, iso_now, session_expiry, token_hash, verify_password
-from .db import connect, init_db, rows_to_dicts
-=======
-from .auth import create_token, hash_password, iso_now, session_expiry, verify_password
 from .db import (
     DEFAULT_CATEGORIES,
     connect,
@@ -44,7 +33,6 @@ from .db import (
     replace_database_from_file,
     rows_to_dicts,
 )
->>>>>>> 998f1df084449202d0ee5055565d63abfeb46b81
 
 APP_ROOT = Path(__file__).resolve().parent
 STATIC_DIR = APP_ROOT / "static"
@@ -53,14 +41,10 @@ ROLE_CHOICES = ["admin", "usuario", "solo_lectura"]
 BACKUP_DIR = Path(os.getenv("BACKUP_DIR", "/backups"))
 BACKUP_KEEP = max(1, int(os.getenv("BACKUP_KEEP", "10")))
 
-<<<<<<< HEAD
 limiter = Limiter(key_func=get_remote_address)
-app = FastAPI(title="Checklist Hogar", version="1.0.0")
+app = FastAPI(title="Checklist Hogar", version="2.0.0")
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
-=======
-app = FastAPI(title="Checklist Hogar", version="2.0.0")
->>>>>>> 998f1df084449202d0ee5055565d63abfeb46b81
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
@@ -134,13 +118,8 @@ def bool_env(name: str, default: bool = False) -> bool:
     return os.getenv(name, str(default)).strip().lower() in {"1", "true", "yes", "on"}
 
 
-<<<<<<< HEAD
 def now_local_text() -> str:
     return datetime.now().strftime("%d/%m/%Y %H:%M")
-=======
-def token_hash(token: str) -> str:
-    return hashlib.sha256(token.encode("utf-8")).hexdigest()
->>>>>>> 998f1df084449202d0ee5055565d63abfeb46b81
 
 
 def cookie_settings() -> dict[str, Any]:
@@ -335,43 +314,10 @@ def setup_status() -> dict:
     }
 
 
-<<<<<<< HEAD
-@app.post("/api/auth/register")
-@limiter.limit("10/minute")
-def register(request: Request, payload: RegisterIn, response: Response) -> dict:
-    with connect() as conn:
-        total_users = conn.execute("SELECT COUNT(*) AS total FROM users").fetchone()["total"]
-        if total_users > 0 and not bool_env("ALLOW_REGISTRATION", False):
-            raise HTTPException(status_code=403, detail="El registro público está deshabilitado.")
-        role = "admin" if total_users == 0 else "user"
-        try:
-            cur = conn.execute(
-                """
-                INSERT INTO users (name, email, password_hash, role, is_active, created_at)
-                VALUES (?, ?, ?, ?, 1, ?)
-                """,
-                (payload.name.strip(), payload.email.lower(), hash_password(payload.password), role, iso_now()),
-            )
-        except Exception:
-            raise HTTPException(status_code=409, detail="El correo ya está registrado.")
-        user_id = cur.lastrowid
-        token, hashed = create_token()
-        conn.execute(
-            "INSERT INTO sessions (user_id, token_hash, created_at, expires_at) VALUES (?, ?, ?, ?)",
-            (user_id, hashed, iso_now(), session_expiry()),
-        )
-    response.set_cookie(value=token, **cookie_settings())
-    return {"ok": True, "user": {"id": user_id, "name": payload.name, "email": payload.email, "role": role}}
-
-
 @app.post("/api/auth/login")
 @limiter.limit("10/minute")
 def login(request: Request, payload: LoginIn, response: Response) -> dict:
-=======
-@app.post("/api/auth/login")
-def login(payload: LoginIn, request: Request, response: Response) -> dict:
     username = normalize_username(payload.username)
->>>>>>> 998f1df084449202d0ee5055565d63abfeb46b81
     with connect() as conn:
         row = conn.execute(
             "SELECT id, username, password_hash, role, is_active FROM users WHERE lower(username) = ?",
@@ -439,14 +385,10 @@ def list_users(_: dict = Depends(require_admin)) -> dict:
 
 
 @app.post("/api/users")
-<<<<<<< HEAD
 @limiter.limit("10/minute")
-def create_user(request: Request, payload: UserCreateIn, _: dict = Depends(require_admin)) -> dict:
-=======
-def create_user(payload: UserCreateIn, admin: dict = Depends(require_admin)) -> dict:
+def create_user(request: Request, payload: UserCreateIn, admin: dict = Depends(require_admin)) -> dict:
     username = normalize_username(payload.username)
     role = normalize_role(payload.role)
->>>>>>> 998f1df084449202d0ee5055565d63abfeb46b81
     with connect() as conn:
         try:
             cur = conn.execute(

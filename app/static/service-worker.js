@@ -1,11 +1,6 @@
-<<<<<<< HEAD
-const CACHE_NAME = 'checklist-hogar-v1';
-const STATIC_ASSETS = ['/', '/static/styles.css', '/static/app.js', '/static/manifest.json', '/static/icon-192.png', '/static/icon-512.png'];
-=======
 const CACHE_NAME = 'checklist-hogar-v5';
 const STATIC_ASSETS = [
   '/',
-  '/static/index.html',
   '/static/styles.css',
   '/static/app.js',
   '/static/api.js',
@@ -15,7 +10,6 @@ const STATIC_ASSETS = [
   '/static/icons/icon-192.svg',
   '/static/icons/icon-512.svg'
 ];
->>>>>>> 998f1df084449202d0ee5055565d63abfeb46b81
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS)));

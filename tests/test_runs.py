@@ -15,11 +15,12 @@ def client():
     db_file.parent.mkdir(parents=True, exist_ok=True)
 
     os.environ["APP_SECRET"] = "test-secret-for-api"
-    os.environ["ADMIN_EMAIL"] = "admin@test.local"
+    os.environ["ADMIN_USER"] = "admin"
     os.environ["ADMIN_PASSWORD"] = "admin-pass-123"
     os.environ["ADMIN_NAME"] = "Test Admin"
     os.environ["ALLOW_REGISTRATION"] = "false"
     os.environ["DATABASE_PATH"] = str(db_file)
+    os.environ["LOCAL_ONLY"] = "false"
 
     import app.db as db_mod
     db_mod.DATABASE_PATH = str(db_file)
@@ -52,7 +53,6 @@ def test_setup_status(client):
     assert response.status_code == 200
     data = response.json()
     assert data["has_users"] is True
-    assert data["allow_registration"] is False
 
 
 def test_frontend_served(client):
@@ -63,7 +63,7 @@ def test_frontend_served(client):
 
 def test_login_with_invalid_credentials(client):
     response = client.post("/api/auth/login", json={
-        "email": "admin@test.local",
+        "username": "admin",
         "password": "wrong-password"
     })
     assert response.status_code == 401
@@ -71,7 +71,7 @@ def test_login_with_invalid_credentials(client):
 
 def test_login_with_valid_credentials(client):
     response = client.post("/api/auth/login", json={
-        "email": "admin@test.local",
+        "username": "admin",
         "password": "admin-pass-123"
     })
     assert response.status_code == 200
@@ -81,13 +81,13 @@ def test_login_with_valid_credentials(client):
     assert response.cookies.get("checklist_session") is not None
 
 
-def test_register_disabled_when_users_exist(client):
+def test_register_endpoint_removed(client):
     response = client.post("/api/auth/register", json={
         "name": "Test User",
         "email": "user@test.local",
         "password": "test-pass-123"
     })
-    assert response.status_code == 403
+    assert response.status_code == 404
 
 
 def test_unauthorized_access(client):
@@ -103,7 +103,7 @@ def test_unauthorized_access(client):
 
 def test_checklist_authenticated(client):
     client.post("/api/auth/login", json={
-        "email": "admin@test.local",
+        "username": "admin",
         "password": "admin-pass-123"
     })
 
@@ -117,7 +117,7 @@ def test_checklist_authenticated(client):
 
 def test_create_run_and_receipt(client):
     client.post("/api/auth/login", json={
-        "email": "admin@test.local",
+        "username": "admin",
         "password": "admin-pass-123"
     })
 
@@ -131,7 +131,8 @@ def test_create_run_and_receipt(client):
         "completed_task_ids": [first_task["id"]],
         "notes_by_task": {},
         "include_pending": True,
-        "client_closed_at": "01/01/2025 10:00"
+        "local_date": "2025-01-01",
+        "local_time": "10:00"
     })
     assert response.status_code == 200
     data = response.json()
@@ -151,7 +152,7 @@ def test_create_run_and_receipt(client):
 
 def test_delete_run(client):
     client.post("/api/auth/login", json={
-        "email": "admin@test.local",
+        "username": "admin",
         "password": "admin-pass-123"
     })
 
@@ -164,11 +165,13 @@ def test_delete_run(client):
         "observations": "",
         "completed_task_ids": [first_task["id"]],
         "notes_by_task": {},
-        "include_pending": False
+        "include_pending": False,
+        "local_date": "2025-01-01",
+        "local_time": "10:00"
     })
     run_id = created.json()["run_id"]
 
-    response = client.delete(f"/api/runs/{run_id}")
+    response = client.request("DELETE", f"/api/runs/{run_id}", json={"reason": "test"})
     assert response.status_code == 200
 
     response = client.get(f"/api/runs/{run_id}")
