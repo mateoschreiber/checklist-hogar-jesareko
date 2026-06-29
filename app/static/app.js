@@ -8,6 +8,9 @@ const state = {
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => Array.from(document.querySelectorAll(selector));
 
+const entityMap = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+function safe(str) { return String(str).replace(/[&<>"']/g, (c) => entityMap[c]); }
+
 const api = async (url, options = {}) => {
   const res = await fetch(url, {
     credentials: 'same-origin',
@@ -221,8 +224,8 @@ async function loadHistory() {
   list.innerHTML = state.history.map((run) => `
     <article class="history-item">
       <div>
-        <h3>${run.routine_title} · ${run.percent}%</h3>
-        <p>${run.client_closed_at || run.server_closed_at} · Responsable: ${run.responsible} · ${run.completed_count}/${run.total_count} tareas · Usuario: ${run.user_name}</p>
+        <h3>${safe(run.routine_title)} · ${run.percent}%</h3>
+        <p>${safe(run.client_closed_at || run.server_closed_at)} · Responsable: ${safe(run.responsible)} · ${run.completed_count}/${run.total_count} tareas · Usuario: ${safe(run.user_name)}</p>
       </div>
       <div class="item-actions">
         <a href="/api/runs/${run.id}/receipt" target="_blank" rel="noopener">Comprobante</a>
@@ -249,7 +252,7 @@ async function loadUsers() {
     const list = $('#usersList');
     list.innerHTML = data.users.map((user) => `
       <article class="user-item">
-        <div><h3>${user.name}</h3><p>${user.email} · ${user.role} · ${user.is_active ? 'Activo' : 'Inactivo'}</p></div>
+        <div><h3>${safe(user.name)}</h3><p>${safe(user.email)} · ${safe(user.role)} · ${user.is_active ? 'Activo' : 'Inactivo'}</p></div>
       </article>
     `).join('');
   } catch (_) {}

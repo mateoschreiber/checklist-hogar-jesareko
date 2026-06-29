@@ -6,6 +6,17 @@ import os
 import secrets
 from datetime import datetime, timedelta, timezone
 
+_APP_SECRET_CACHE: str | None = None
+
+
+def _get_app_secret() -> str:
+    global _APP_SECRET_CACHE
+    if _APP_SECRET_CACHE is None:
+        _APP_SECRET_CACHE = os.getenv("APP_SECRET", "").strip()
+    if not _APP_SECRET_CACHE:
+        raise RuntimeError("APP_SECRET no esta configurado en las variables de entorno.")
+    return _APP_SECRET_CACHE
+
 
 def utc_now() -> datetime:
     return datetime.now(timezone.utc)
@@ -17,7 +28,7 @@ def iso_now() -> str:
 
 def hash_password(password: str, iterations: int = 260_000) -> str:
     if not password or len(password) < 8:
-        raise ValueError("La contraseña debe tener al menos 8 caracteres.")
+        raise ValueError("La contrasena debe tener al menos 8 caracteres.")
     salt = secrets.token_bytes(16)
     digest = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, iterations)
     return f"pbkdf2_sha256${iterations}${salt.hex()}${digest.hex()}"
@@ -37,10 +48,15 @@ def verify_password(password: str, stored_hash: str) -> bool:
         return False
 
 
+def token_hash(token: str) -> str:
+    secret = _get_app_secret()
+    return hmac.new(secret.encode("utf-8"), token.encode("utf-8"), hashlib.sha256).hexdigest()
+
+
 def create_token() -> tuple[str, str]:
     token = secrets.token_urlsafe(40)
-    token_hash = hashlib.sha256(token.encode("utf-8")).hexdigest()
-    return token, token_hash
+    hashed = token_hash(token)
+    return token, hashed
 
 
 def session_expiry(days: int | None = None) -> str:

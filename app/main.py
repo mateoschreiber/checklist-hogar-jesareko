@@ -1,11 +1,10 @@
 from __future__ import annotations
 
 import csv
-import hashlib
 import io
 import json
 import os
-from datetime import datetime, timezone
+from datetime import datetime
 from html import escape
 from pathlib import Path
 from typing import Any, Optional
@@ -15,15 +14,21 @@ from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
 
-from .auth import create_token, hash_password, iso_now, session_expiry, verify_password
+from .auth import create_token, hash_password, iso_now, session_expiry, token_hash, verify_password
 from .db import connect, init_db, rows_to_dicts
 
 APP_ROOT = Path(__file__).resolve().parent
 STATIC_DIR = APP_ROOT / "static"
 COOKIE_NAME = "checklist_session"
 
+limiter = Limiter(key_func=get_remote_address)
 app = FastAPI(title="Checklist Hogar", version="1.0.0")
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
@@ -58,12 +63,7 @@ def bool_env(name: str, default: bool = False) -> bool:
 
 
 def now_local_text() -> str:
-    # El contenedor usa TZ si se declara en .env / compose.
     return datetime.now().strftime("%d/%m/%Y %H:%M")
-
-
-def token_hash(token: str) -> str:
-    return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
 
 def cookie_settings() -> dict[str, Any]:
@@ -128,7 +128,8 @@ def setup_status() -> dict:
 
 
 @app.post("/api/auth/register")
-def register(payload: RegisterIn, response: Response) -> dict:
+@limiter.limit("10/minute")
+def register(request: Request, payload: RegisterIn, response: Response) -> dict:
     with connect() as conn:
         total_users = conn.execute("SELECT COUNT(*) AS total FROM users").fetchone()["total"]
         if total_users > 0 and not bool_env("ALLOW_REGISTRATION", False):
@@ -155,7 +156,8 @@ def register(payload: RegisterIn, response: Response) -> dict:
 
 
 @app.post("/api/auth/login")
-def login(payload: LoginIn, request: Request, response: Response) -> dict:
+@limiter.limit("10/minute")
+def login(request: Request, payload: LoginIn, response: Response) -> dict:
     with connect() as conn:
         row = conn.execute(
             "SELECT id, name, email, password_hash, role, is_active FROM users WHERE email = ?",
@@ -201,7 +203,8 @@ def list_users(_: dict = Depends(require_admin)) -> dict:
 
 
 @app.post("/api/users")
-def create_user(payload: UserCreateIn, _: dict = Depends(require_admin)) -> dict:
+@limiter.limit("10/minute")
+def create_user(request: Request, payload: UserCreateIn, _: dict = Depends(require_admin)) -> dict:
     with connect() as conn:
         try:
             cur = conn.execute(
