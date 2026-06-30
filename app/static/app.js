@@ -73,7 +73,6 @@ const THEMES = {
     primaryRgb: '224,33,138',
     primaryDarkRgb: '181,22,110'
   }
-  }
 };
 const DEFAULT_THEME = 'blue';
 
@@ -226,7 +225,6 @@ function setStatus(message, tone = 'info') {
   box.textContent = message;
   box.dataset.tone = tone;
   box.hidden = !message;
-}
 }
 
 function showLogin() {
