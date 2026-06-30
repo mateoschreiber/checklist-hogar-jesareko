@@ -1,6 +1,7 @@
-const CACHE_NAME = 'checklist-hogar-v11';
+const CACHE_NAME = 'checklist-hogar-v12';
 const STATIC_ASSETS = [
   '/',
+  '/?source=pwa',
   '/static/styles.css',
   '/static/app.js',
   '/static/api.js',
@@ -9,7 +10,10 @@ const STATIC_ASSETS = [
   '/static/manifest.json',
   '/static/icons/icon-192.svg',
   '/static/icons/icon-512.svg',
-  '/?source=pwa'
+  '/static/icons/icon-192.png',
+  '/static/icons/icon-512.png',
+  '/static/icons/icon-192-maskable.png',
+  '/static/icons/icon-512-maskable.png'
 ];
 
 self.addEventListener('install', (event) => {
