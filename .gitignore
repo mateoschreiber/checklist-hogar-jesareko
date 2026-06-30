@@ -1,5 +1,4 @@
 __pycache__/
-<<<<<<< HEAD
 *.py[cod]
 *.pyo
 
@@ -26,19 +25,10 @@ Thumbs.db
 dist/
 build/
 *.egg-info/
-=======
-*.pyc
-.venv/
-.pip-install.log
 
 *.bak-*
+.pip-install.log
 
 data/*.db
 data/*.db-shm
 data/*.db-wal
-
-backups/*.db
-backups/*.db.gz
-
-.env
->>>>>>> 998f1df084449202d0ee5055565d63abfeb46b81

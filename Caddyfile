@@ -1,0 +1,18 @@
+# Caddyfile for Checklist Hogar PWA
+# Enables HTTPS for PWA secure context on Android
+# Requires DNS/router/hosts to point checklist-hogar.local to this server
+
+checklist-hogar.local {
+	tls internal
+
+	header {
+		X-Forwarded-Proto https
+	}
+
+	reverse_proxy checklist-hogar:8080
+
+	log {
+		output stdout
+		format console
+	}
+}
